@@ -1,0 +1,50 @@
+# ---- Node & Environment ----
+node_modules/
+.env
+.env.*
+.env.example
+
+# Logs & diagnostics
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Coverage / test output
+coverage/
+.nyc_output/
+
+# Build artifacts
+build/
+dist/
+.tmp/
+.temp/
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# TypeScript (if added later)
+*.tsbuildinfo
+
+# Swagger generated (if you output JSON later)
+swagger.json
+
+# Misc
+*.swp
+*.swm
+
+# Mongo temp dumps
+*.bson
+*.wt
+
+# Optional: lockfiles (uncomment if you want to ignore specific ones)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
