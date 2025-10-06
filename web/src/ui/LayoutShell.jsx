@@ -12,7 +12,10 @@ export default function LayoutShell(){
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-neutral-800 bg-neutral-900/70 backdrop-blur sticky top-0 z-20">
         <div className="max-w-5xl mx-auto flex items-center gap-4 px-4 h-14">
-          <div className="font-semibold text-lg">Threads<span className="text-violet-500">Web</span></div>
+          <div className="flex items-center gap-2 font-semibold text-lg">
+            <img src="/logo.png" alt="Pawster logo" className="w-11 h-11 rounded" />
+            <span>Paw<span className="text-violet-500">ster</span></span>
+          </div>
           <nav className="flex gap-1">
             <NavItem to="/">Feed</NavItem>
             <NavItem to="/friends">Friends</NavItem>
