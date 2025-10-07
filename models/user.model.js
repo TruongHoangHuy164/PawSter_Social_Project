@@ -8,7 +8,11 @@ const userSchema = new mongoose.Schema({
   friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   isPro: { type: Boolean, default: false },
   proExpiry: { type: Date },
-  badges: [{ type: String }]
+  badges: [{ type: String }],
+  avatarKey: { type: String },
+  coverKey: { type: String },
+  bio: { type: String, maxlength: 300 },
+  website: { type: String }
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

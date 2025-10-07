@@ -100,7 +100,7 @@ export default function ThreadComposer({ onCreated }){
       {error && <div className="text-xs text-red-400">{error}</div>}
       <div className="flex items-center justify-between text-xs text-neutral-500">
         <span>{text.length}/500</span>
-        <button disabled={loading || (!text.trim() && files.length===0)} className="px-4 py-1.5 rounded bg-violet-600 hover:bg-violet-500 disabled:opacity-40 font-medium text-sm">Đăng</button>
+  <button disabled={loading || (!text.trim() && files.length===0)} className="px-4 py-1.5 rounded bg-violet-600 hover:bg-violet-500 disabled:opacity-40 font-medium text-sm text-white">Đăng</button>
       </div>
     </form>
   );

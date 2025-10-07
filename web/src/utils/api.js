@@ -15,5 +15,6 @@ export const api = {
   get: (p, t) => request(p, 'GET', undefined, t),
   post: (p, b, t) => request(p, 'POST', b, t),
   del: (p, t) => request(p, 'DELETE', undefined, t),
-  patch: (p, b, t) => request(p, 'PATCH', b, t)
+  patch: (p, b, t) => request(p, 'PATCH', b, t),
+  rawPatch: (p, formData, t) => request(p, 'PATCH', formData, t)
 };

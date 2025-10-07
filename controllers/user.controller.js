@@ -1,6 +1,8 @@
 import asyncHandler from 'express-async-handler';
 import { User } from '../models/user.model.js';
 import { FriendRequest } from '../models/friendRequest.model.js';
+import { uploadBuffer, getSignedMediaUrl, deleteMediaKey } from '../utils/s3.js';
+import path from 'path';
 
 export const getMe = asyncHandler(async (req, res) => {
   res.json({ success: true, data: req.user });
@@ -12,6 +14,77 @@ export const updateMe = asyncHandler(async (req, res) => {
   for (const key of allowed) if (req.body[key]) updates[key] = req.body[key];
   const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true }).select('-password');
   res.json({ success: true, data: user });
+});
+
+export const getProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('-password');
+  if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+  let avatarUrl=null, coverUrl=null;
+  if (user.avatarKey) avatarUrl = await getSignedMediaUrl(user.avatarKey, 900);
+  if (user.coverKey) coverUrl = await getSignedMediaUrl(user.coverKey, 900);
+  res.json({ success:true, data: {
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+    isPro: user.isPro,
+    friends: user.friends,
+    badges: user.badges,
+    avatarKey: user.avatarKey,
+    coverKey: user.coverKey,
+    avatarUrl, coverUrl,
+    bio: user.bio || '',
+    website: user.website || ''
+  }});
+});
+
+export const updateProfile = asyncHandler( async (req, res) => {
+  const user = await User.findById(req.user._id).select('-password');
+  if (!user) return res.status(404).json({ success:false, message:'User not found' });
+
+  const { bio, website, username } = req.body;
+  if (typeof bio !== 'undefined') user.bio = String(bio).slice(0,300);
+  if (typeof website !== 'undefined') user.website = String(website).slice(0,200);
+  if (typeof username !== 'undefined' && username.trim()) user.username = username.trim();
+
+  const files = req.files || {};
+  const toDelete = [];
+  // avatar
+  if (files.avatar && files.avatar[0]) {
+    if (user.avatarKey) toDelete.push(user.avatarKey); // we delete after successful upload new one
+    const f = files.avatar[0];
+    const ext = path.extname(f.originalname).replace('.','') || f.mimetype?.split('/')?.[1];
+    const { key } = await uploadBuffer({ buffer: f.buffer, mimeType: f.mimetype, folder:'avatars', ext, userId: user._id });
+    user.avatarKey = key;
+  }
+  // cover
+  if (files.cover && files.cover[0]) {
+    if (user.coverKey) toDelete.push(user.coverKey);
+    const f = files.cover[0];
+    const ext = path.extname(f.originalname).replace('.','') || f.mimetype?.split('/')?.[1];
+    const { key } = await uploadBuffer({ buffer: f.buffer, mimeType: f.mimetype, folder:'covers', ext, userId: user._id });
+    user.coverKey = key;
+  }
+
+  await user.save();
+  // delete old keys AFTER save (ignore errors)
+  for (const k of toDelete) { try { await deleteMediaKey(k); } catch(e){ /* ignore */ } }
+
+  const avatarUrl = user.avatarKey ? await getSignedMediaUrl(user.avatarKey, 900) : null;
+  const coverUrl = user.coverKey ? await getSignedMediaUrl(user.coverKey, 900) : null;
+
+  res.json({ success:true, data: {
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+    isPro: user.isPro,
+    friends: user.friends,
+    badges: user.badges,
+    avatarKey: user.avatarKey,
+    coverKey: user.coverKey,
+    avatarUrl, coverUrl,
+    bio: user.bio || '',
+    website: user.website || ''
+  }});
 });
 
 export const getFriends = asyncHandler(async (req, res) => {

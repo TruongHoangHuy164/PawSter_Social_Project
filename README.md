@@ -73,6 +73,16 @@ Threads:
 - GET /api/threads
 - DELETE /api/threads/:id
 
+Profile:
+- GET /api/users/me/profile (returns profile with signed avatarUrl & coverUrl if available)
+- PATCH /api/users/me/profile (multipart/form-data):
+	- username (string, optional)
+	- avatar (image, optional, max ~5MB)
+	- cover (image, optional, max ~5MB)
+	- bio (string <=300 chars)
+	- website (string <=200 chars)
+	Response includes signed URLs (valid ~15m) and stored S3 keys. Old images are deleted after successful upload.
+
 Payments:
 - POST /api/payments/create { provider?, amount? }
 - POST /api/payments/webhook { paymentId, status }
