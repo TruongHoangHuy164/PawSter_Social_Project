@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '../state/auth.jsx';
-import { Feed, Login, Register, Profile, Friends, Upgrade, QR } from './index.js';
+import { Feed, Login, Register, Profile, Friends, Upgrade, QR, Search, Favorites } from './index.js';
 import LayoutShell from '../ui/LayoutShell.jsx';
 
 const Protected = ({ children }) => {
@@ -23,6 +23,8 @@ export default function App() {
           <Route path="/friends" element={<Protected><Friends /></Protected>} />
           <Route path="/upgrade" element={<Protected><Upgrade /></Protected>} />
           <Route path="/qr" element={<Protected><QR /></Protected>} />
+          <Route path="/search" element={<Protected><Search /></Protected>} />
+          <Route path="/favorites" element={<Protected><Favorites /></Protected>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

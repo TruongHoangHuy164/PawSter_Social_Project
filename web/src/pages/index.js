@@ -5,3 +5,5 @@ export { default as Friends } from './friends/Friends.jsx';
 export { default as Profile } from './profile/Profile.jsx';
 export { default as Upgrade } from './upgrade/Upgrade.jsx';
 export { default as QR } from './qr/QR.jsx';
+export { default as Search } from './search/Search.jsx';
+export { default as Favorites } from './favorites/Favorites.jsx';
