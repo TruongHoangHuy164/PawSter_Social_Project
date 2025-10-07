@@ -24,6 +24,14 @@ MONGO_URI=mongodb://localhost:27017/threadsApp
 JWT_SECRET=supersecret
 QR_SECRET=qrsecretkey
 APP_URL=http://localhost:3000
+
+# AWS S3 (provide your own values)
+AWS_ACCESS_KEY_ID=YOUR_KEY
+AWS_SECRET_ACCESS_KEY=YOUR_SECRET
+AWS_REGION=ap-southeast-1
+AWS_S3_BUCKET=your-bucket-name
+# Optional CloudFront or custom domain base (omit trailing slash)
+# AWS_S3_BASE_URL=https://cdn.yourdomain.com
 ```
 3. Install dependencies:
 ```
@@ -59,7 +67,9 @@ QR / Friend Flow:
 - POST /api/qr/scan { token } -> creates friend request
 
 Threads:
-- POST /api/threads { content }
+- POST /api/threads multipart/form-data:
+	- content (text, optional if media present)
+	- media (up to 6 files: images/video/audio)
 - GET /api/threads
 - DELETE /api/threads/:id
 
@@ -74,6 +84,7 @@ Automatically enforced. Upgrade via payment webhook to set `isPro=true` (+ badge
 - Payment is a mock; integrate real gateway later.
 - Add rate limiting & input validation for production.
 - Enhance Swagger by adding JSDoc annotations in controllers/routes.
+- Media uploads stored directly in S3 with public-read ACL (adjust to signed URLs for production security if needed). Max 6 files, 25MB each. Supported: images (jpeg/png/gif/webp/avif/svg), video (mp4/webm/quicktime/ogg), audio (mp3/mpeg/wav/ogg/webm/aac).
 
 ## License
 MIT

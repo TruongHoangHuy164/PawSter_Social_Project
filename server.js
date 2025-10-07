@@ -36,8 +36,10 @@ import userRoutes from './routes/user.routes.js';
 import threadRoutes from './routes/thread.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import qrRoutes from './routes/qr.routes.js';
+import mediaRoutes from './routes/media.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
+import { verifyS3Connection } from './utils/s3.js';
 
 const app = express();
 app.use(cors());
@@ -62,6 +64,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/threads', threadRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/qr', qrRoutes);
+app.use('/api/media', mediaRoutes);
 
 // 404
 app.use((req, res) => {
@@ -80,8 +83,11 @@ if (!process.env.MONGO_URI) {
   console.warn('⚠️  MONGO_URI not found in environment. Using fallback in-memory server will fail (no in-memory configured). Update .env');
 }
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Threads API is running on http://localhost:${PORT}`);
+connectDB()
+  .then(async () => {
+    // Fire and forget S3 verification (doesn't block server if it fails)
+    verifyS3Connection().catch(()=>{});
+    app.listen(PORT, () => {
+      console.log(`🚀 Threads API is running on http://localhost:${PORT}`);
+    });
   });
-});
