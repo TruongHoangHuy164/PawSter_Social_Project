@@ -5,7 +5,8 @@ import { uploadBuffer, getSignedMediaUrl, deleteMediaKey } from '../utils/s3.js'
 import path from 'path';
 
 export const getMe = asyncHandler(async (req, res) => {
-  res.json({ success: true, data: req.user });
+  const u = req.user;
+  res.json({ success: true, data: { _id: u._id, username: u.username, email: u.email, isPro: u.isPro, isAdmin: u.isAdmin } });
 });
 
 export const updateMe = asyncHandler(async (req, res) => {

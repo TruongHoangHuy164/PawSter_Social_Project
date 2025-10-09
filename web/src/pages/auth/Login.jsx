@@ -14,8 +14,10 @@ export default function Login(){
     e.preventDefault(); setError(''); setLoading(true);
     try {
       const res = await api.post('/auth/login', form);
-      login(res.data.data.token);
-      nav('/');
+      const { token, user } = res.data.data || {};
+      login(token);
+      const isAdmin = !!(user && user.isAdmin);
+      nav(isAdmin ? '/admin' : '/');
     } catch (e){ setError(e.message); } finally { setLoading(false); }
   };
 

@@ -37,6 +37,8 @@ import threadRoutes from './routes/thread.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import qrRoutes from './routes/qr.routes.js';
 import mediaRoutes from './routes/media.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import adminBootstrapRoutes from './routes/adminBootstrap.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import { verifyS3Connection } from './utils/s3.js';
@@ -65,6 +67,8 @@ app.use('/api/threads', threadRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin-bootstrap', adminBootstrapRoutes);
 
 // 404
 app.use((req, res) => {

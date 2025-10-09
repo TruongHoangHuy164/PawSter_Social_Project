@@ -15,7 +15,7 @@ export const register = asyncHandler(async (req, res) => {
   if (exists) return res.status(400).json({ success: false, message: 'User already exists' });
   const user = await User.create({ username, email, password });
   const token = signToken(user);
-  res.status(201).json({ success: true, data: { token, user: { id: user._id, username, email } } });
+  res.status(201).json({ success: true, data: { token, user: { id: user._id, username, email, isAdmin: user.isAdmin, isPro: user.isPro } } });
 });
 
 export const login = asyncHandler(async (req, res) => {
@@ -26,5 +26,5 @@ export const login = asyncHandler(async (req, res) => {
   const match = await user.comparePassword(password);
   if (!match) return res.status(401).json({ success: false, message: 'Invalid credentials' });
   const token = signToken(user);
-  res.json({ success: true, data: { token, user: { id: user._id, username: user.username, email: user.email, isPro: user.isPro } } });
+  res.json({ success: true, data: { token, user: { id: user._id, username: user.username, email: user.email, isPro: user.isPro, isAdmin: user.isAdmin } } });
 });

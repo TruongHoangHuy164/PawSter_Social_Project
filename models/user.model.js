@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   isPro: { type: Boolean, default: false },
   proExpiry: { type: Date },
   badges: [{ type: String }],
+  isAdmin: { type: Boolean, default: false },
   avatarKey: { type: String },
   coverKey: { type: String },
   bio: { type: String, maxlength: 300 },
