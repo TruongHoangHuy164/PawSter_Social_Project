@@ -45,13 +45,13 @@ export default function BottomBar({ onAdd }) {
     }
   };
   return (
-    <div className="fixed bottom-0 inset-x-0 z-30 bg-neutral-900/90 backdrop-blur border-t border-neutral-800">
-      <div className="max-w-4xl mx-auto flex items-stretch justify-around px-2 md:px-6">
+    <div className="fixed bottom-0 inset-x-0 z-30 bg-opacity-60 backdrop-blur border-t" style={{borderColor:'var(--panel-border)'}}>
+      <div className="max-w-4xl mx-auto flex items-stretch justify-around px-3 md:px-6 py-3 container">
         <Item to="/" label="Home" Icon={HomeIcon} />
         <Item to="/search" label="Tìm" Icon={SearchIcon} />
         <button
           onClick={openComposer}
-          className="relative -mt-5 md:mt-0 md:mb-2 bg-violet-600 hover:bg-violet-500 text-white w-14 h-14 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-lg shadow-violet-900/40 border border-violet-400/30 active:scale-95 transition"
+          className="relative -mt-6 md:mt-0 md:mb-2 bg-gradient-to-br from-var(--accent) to-violet-500 text-white w-14 h-14 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-xl transform-gpu hover:scale-105 pop float"
           aria-label="Thêm bài viết"
         >
           <AddIcon />

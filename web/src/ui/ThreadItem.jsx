@@ -74,10 +74,10 @@ export default function ThreadItem({ thread, onDelete }){
     try { await api.del(`/threads/${thread._id}`, token); onDelete?.(thread._id); } catch(e){ console.error(e); }
   };
   return (
-    <div className="p-4 border border-neutral-800 rounded-lg bg-neutral-900 space-y-2">
+    <div className="p-4 rounded-lg space-y-2 card pop">
       <div className="flex items-center gap-2 text-sm">
         <span className="font-medium">{thread.author?.username || 'Unknown'} {thread.author?.isPro && <ProBadge />}</span>
-        <span className="text-neutral-500 text-xs">{new Date(thread.createdAt).toLocaleString()}</span>
+        <span className="text-xs text-muted">{new Date(thread.createdAt).toLocaleString()}</span>
         {mine && <button onClick={del} className="ml-auto text-xs text-red-400 hover:underline">Xóa</button>}
       </div>
       <div className="text-sm leading-relaxed whitespace-pre-wrap">{thread.content}</div>
@@ -91,7 +91,7 @@ export default function ThreadItem({ thread, onDelete }){
               if (m.type === 'image') {
                 return (
                   <div key={i} className="relative group">
-                    {!url && !error && <div className="flex items-center justify-center border border-neutral-700 rounded w-full h-40 text-xs text-neutral-500">Đang tải...</div>}
+                    {!url && !error && <div className="flex items-center justify-center border border-neutral-200 rounded w-full h-40 text-xs text-muted">Đang tải...</div>}
                     {error && <div className="border border-red-600 text-red-400 text-xs p-2 rounded">Lỗi ảnh</div>}
                     {url && (
                       <a href={url} target="_blank" rel="noreferrer" className="block group">
@@ -107,12 +107,12 @@ export default function ThreadItem({ thread, onDelete }){
                     key={i}
                     data-media-index={i}
                     ref={el => { if (el) mediaRefs.current[i] = el; }}
-                    className="relative border border-neutral-700 rounded overflow-hidden min-h-24 flex items-center justify-center bg-black"
+                    className="relative border border-neutral-200 rounded overflow-hidden min-h-24 flex items-center justify-center bg-white"
                   >
                     {!url && !error && !loading && (
-                      <div className="text-xs px-2 py-1 text-neutral-400">Đang chờ hiển thị...</div>
+                      <div className="text-xs px-2 py-1 text-muted">Đang chờ hiển thị...</div>
                     )}
-                    {loading && <div className="text-neutral-400 text-xs p-2">Đang lấy link...</div>}
+                    {loading && <div className="text-muted text-xs p-2">Đang lấy link...</div>}
                     {error && <div className="text-red-400 text-xs p-2">Lỗi video</div>}
                     {url && <video src={url} controls className="w-full max-h-60" />}
                   </div>
@@ -124,7 +124,7 @@ export default function ThreadItem({ thread, onDelete }){
                     key={i}
                     data-media-index={i}
                     ref={el => { if (el) mediaRefs.current[i] = el; }}
-                    className="p-2 border border-neutral-700 rounded flex items-center gap-2 bg-neutral-800"
+                    className="p-2 border border-neutral-200 rounded flex items-center gap-2 bg-white"
                   >
                     {!url && !error && !loading && <span className="text-xs text-neutral-400">Đang chờ tải...</span>}
                     {loading && <span className="text-neutral-400 text-xs">Đang lấy...</span>}

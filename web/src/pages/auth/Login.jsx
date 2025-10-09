@@ -20,21 +20,30 @@ export default function Login(){
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <form onSubmit={submit} className="w-full max-w-sm bg-neutral-900 border border-neutral-800 p-6 rounded-lg space-y-5 shadow-xl">
-        <h1 className="text-xl font-semibold text-center">Đăng nhập</h1>
-        {error && <div className="text-red-400 text-sm">{error}</div>}
-        <div className="space-y-2">
-          <label className="text-sm">Email</label>
-          <input type="email" className="w-full bg-neutral-800 border-neutral-700 focus:ring-violet-500 focus:border-violet-500 rounded" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} required />
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-transparent to-transparent">
+      <div className="w-full max-w-md p-6 rounded-xl card">
+        <div className="flex items-center gap-4 mb-4">
+          <img src="/logo.png" alt="logo" className="w-12 h-12 rounded-md shadow" />
+          <div>
+            <h1 className="text-2xl font-bold" style={{color:'var(--text)'}}>Chào mừng đến với Pawster</h1>
+            <p className="text-sm text-muted-foreground">Đăng nhập để tiếp tục</p>
+          </div>
         </div>
-        <div className="space-y-2">
-          <label className="text-sm">Mật khẩu</label>
-          <input type="password" className="w-full bg-neutral-800 border-neutral-700 focus:ring-violet-500 focus:border-violet-500 rounded" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} required />
-        </div>
-        <button disabled={loading} className="w-full py-2 rounded bg-violet-600 hover:bg-violet-500 disabled:opacity-50 font-medium">{loading? 'Đang xử lý...' : 'Đăng nhập'}</button>
-        <p className="text-xs text-center text-neutral-400">Chưa có tài khoản? <Link to="/register" className="text-violet-400 hover:underline">Đăng ký</Link></p>
-      </form>
+
+        <form onSubmit={submit} className="space-y-4 fade-in">
+          {error && <div className="text-red-400 text-sm">{error}</div>}
+          <div>
+            <label className="block text-sm mb-1">Email</label>
+            <input type="email" className="w-full px-3 py-2 rounded-md bg-white border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] transition" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} required />
+          </div>
+          <div>
+            <label className="block text-sm mb-1">Mật khẩu</label>
+            <input type="password" className="w-full px-3 py-2 rounded-md bg-white border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] transition" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} required />
+          </div>
+          <button disabled={loading} className="w-full py-2 rounded-md bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-md hover:scale-[1.01] transform-gpu transition">{loading? 'Đang xử lý...' : 'Đăng nhập'}</button>
+          <p className="text-xs text-center text-neutral-400">Chưa có tài khoản? <Link to="/register" className="text-violet-400 hover:underline">Đăng ký</Link></p>
+        </form>
+      </div>
     </div>
   );
 }

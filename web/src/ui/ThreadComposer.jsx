@@ -71,17 +71,17 @@ export default function ThreadComposer({ onCreated }){
   };
 
   return (
-    <form onSubmit={submit} className="border border-neutral-800 rounded-lg p-4 bg-neutral-900 space-y-3">
-      <textarea value={text} onChange={e=>setText(e.target.value)} maxLength={500} rows={3} placeholder="Bạn đang nghĩ gì?" className="w-full resize-none bg-neutral-800 border-neutral-700 focus:ring-violet-500 focus:border-violet-500 rounded" />
+    <form onSubmit={submit} className="rounded-lg p-4 space-y-3 card">
+  <textarea value={text} onChange={e=>setText(e.target.value)} maxLength={500} rows={3} placeholder="Bạn đang nghĩ gì?" className="w-full resize-none bg-white border border-neutral-200 focus:ring-2 focus:ring-[color:var(--accent)] rounded p-3" />
       <div>
-        <input multiple onChange={onSelect} type="file" accept="image/*,video/*,audio/*" className="text-xs" />
+  <input multiple onChange={onSelect} type="file" accept="image/*,video/*,audio/*" className="text-xs" />
         {files.length>0 && (
           <div className="mt-2 grid gap-2" style={{gridTemplateColumns:'repeat(auto-fill,minmax(80px,1fr))'}}>
             {files.map((f,i)=>{
               const url = URL.createObjectURL(f);
               const type = f.type.startsWith('image/') ? 'image' : f.type.startsWith('video/') ? 'video' : f.type.startsWith('audio/') ? 'audio' : 'other';
               return (
-                <div key={i} className="relative group border border-neutral-700 rounded p-1 flex items-center justify-center bg-neutral-800 overflow-hidden">
+                <div key={i} className="relative group rounded overflow-hidden border border-neutral-200 p-1 flex items-center justify-center bg-white">
                   {type==='image' && <img src={url} alt={f.name} className="object-cover w-full h-16" />}
                   {type==='video' && <video src={url} className="w-full h-16 object-cover" muted />}
                   {type==='audio' && <span className="text-[10px] text-neutral-300 truncate">🎵 {f.name}</span>}
@@ -93,7 +93,7 @@ export default function ThreadComposer({ onCreated }){
         )}
       </div>
       {files.length>0 && loading && (
-        <div className="w-full h-2 bg-neutral-800 rounded overflow-hidden">
+  <div className="w-full h-2 bg-neutral-200 rounded overflow-hidden">
           <div className="h-full bg-violet-600 transition-all" style={{width: progress+'%'}} />
         </div>
       )}

@@ -2,12 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
-body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, 'Helvetica Neue', Arial, sans-serif; }
+:root{
+	/* Light theme (default) - pastel pink motif */
+	--bg: #fff6fb; /* soft pastel pink background */
+	--panel: #ffffff; /* panels remain white for contrast */
+	--panel-inner: #fff0f6; /* inner panel soft pastel pink */
+	--muted: #9b6372; /* muted rose */
+	--text: #2b1b22; /* deep warm charcoal for readability */
+	--accent: #ff79b0; /* pastel pink accent */
+	--panel-border: rgba(43,27,34,0.06);
+}
+.dark{
+	/* dark theme keeps contrast but uses warmer tones */
+	--bg: #0b0710;
+	--panel: #0f0d12;
+	--muted: #8f6b76;
+	--text: #f6ecf0;
+	--accent: #ff9fc6; /* lighter pink for dark */
+	--panel-border: rgba(255,255,255,0.04);
+}
+body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); transition: background-color 220ms ease, color 220ms ease; }
 
 ::-webkit-scrollbar { width: 10px; }
-::-webkit-scrollbar-track { background: #1e1e1e; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #444; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
 
 .fade-in { animation: fade 0.3s ease; }
 @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform: translateY(0);} }
+
+/* Soft card & glass style */
+.card { background: var(--panel-inner); border: 1px solid var(--panel-border); box-shadow: 0 8px 30px rgba(2,6,23,0.06); }
+
+/* container and helpers */
+.container { max-width: 1024px; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
+.muted { color: var(--muted); }
+.text-muted { color: var(--muted); }
+.text-muted-foreground { color: var(--muted); }
+.glass { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); }
+
+/* Page panel helper: use on page root to add subtle card background and border */
+.page-panel { background: var(--panel-inner); border: 1px solid var(--panel-border); border-radius: 0.75rem; padding: 1rem; }
+
+/* subtle global transitions */
+* { transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+
+/* scrollbar adjustments for light/dark */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 6px; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); }
+
+/* Input placeholder color to match muted text */
+input::placeholder, textarea::placeholder {
+	color: var(--muted);
+	opacity: 1;
+}
+
+/* Headings and labels inside cards should be high contrast */
+.card h1, .card h2, .card h3 {
+	color: #000; /* black headings inside panels */
+	opacity: 1;
+	font-weight: 800;
+	font-size: 1.25rem;
+}
+.card label, .card .label {
+	color: #000; /* black labels for readability */
+	font-size: 0.98rem;
+	font-weight: 600;
+}
+
+/* Ensure normal inputs inherit theme text color */
+input, textarea, select {
+  color: #000; /* black text inside inputs */
+}
+
+/* Increase base text size inside cards/panels */
+.card, .page-panel { font-size: 1rem; color: #000; }
+
+/* make small subtitle neutrals inside cards visible */
+.card .text-neutral-400 { color: var(--muted) !important; }
+
+/* small motion utilities */
+.pop { transform-origin: center; transition: transform 180ms cubic-bezier(.2,.9,.2,1); }
+.pop:active { transform: scale(.98); }
+.float { animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%{ transform: translateY(0);} 50%{ transform: translateY(-4px);} 100%{ transform: translateY(0);} }
+
+/* Buttons and accent elements use the new accent color */
+.btn-accent { background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #ffffff)); color: white; border-radius: 8px; padding: 0.5rem 0.9rem; }
+.btn-accent:hover { filter: brightness(0.95); }
+
+/* form input backgrounds and borders adjusted for pastel theme */
+input, textarea, select {
+	background: #ffffff; /* keep inputs white for clarity */
+	border: 1px solid rgba(43,27,34,0.06);
+}

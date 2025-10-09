@@ -26,13 +26,17 @@ export default function Search(){
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-4">
       <h1 className="text-lg font-semibold">Tìm kiếm</h1>
-      <form onSubmit={submit} className="flex gap-2">
-        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Nhập từ khoá..." className="flex-1 bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm outline-none focus:border-violet-500" />
-        <button className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded text-sm">Tìm</button>
-      </form>
-      {loading && <div className="text-sm text-neutral-400">Đang tìm...</div>}
-      {error && <div className="text-sm text-red-400">{error}</div>}
-      {!loading && !error && results.length === 0 && <div className="text-sm text-neutral-500">Không có kết quả</div>}
+      <div className="card p-4 rounded">
+        <form onSubmit={submit} className="flex gap-2">
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Nhập từ khoá..." className="flex-1 bg-white border border-neutral-200 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[color:var(--accent)]" />
+          <button className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded text-sm">Tìm</button>
+        </form>
+        <div className="mt-3">
+          {loading && <div className="text-sm text-neutral-400">Đang tìm...</div>}
+          {error && <div className="text-sm text-red-400">{error}</div>}
+          {!loading && !error && results.length === 0 && <div className="text-sm text-neutral-500">Không có kết quả</div>}
+        </div>
+      </div>
     </div>
   );
 }

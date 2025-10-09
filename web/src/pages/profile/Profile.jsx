@@ -92,20 +92,20 @@ export default function Profile(){
   if(!user) return null;
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-6">
+    <div className="max-w-3xl mx-auto p-4 space-y-6 page-panel">
       {/* COVER SECTION */}
-      <div className="relative h-44 rounded-xl overflow-hidden border border-neutral-800 bg-neutral-800/60 flex items-center justify-center text-neutral-600">
+      <div className="relative h-44 rounded-xl overflow-hidden border border-white/6 bg-gradient-to-b from-transparent to-transparent flex items-center justify-center text-neutral-600 card">
         {cover ? <img src={cover} alt="cover" className="object-cover w-full h-full" /> : remoteCover ? <img src={remoteCover} alt="cover" className="object-cover w-full h-full" /> : <span className="text-sm">Chưa có ảnh bìa</span>}
-        <label className="absolute top-2 right-2 text-xs bg-neutral-900/70 backdrop-blur px-3 py-1 rounded cursor-pointer hover:bg-neutral-900">
+  <label className="absolute top-2 right-2 text-xs px-3 py-1 rounded cursor-pointer" style={{background:'color-mix(in srgb, var(--panel) 88%, black 6%)'}}>
           Đổi bìa
           <input ref={coverFileRef} type="file" accept="image/*" className="hidden" onChange={e=>handleFile(e,setCover)} />
         </label>
       </div>
       {/* AVATAR overlaps */}
-      <div className="relative pl-2 -mt-16 flex items-end gap-4">
-        <div className="w-32 h-32 rounded-full ring-4 ring-neutral-900 bg-neutral-800 overflow-hidden flex items-center justify-center text-neutral-500 text-sm relative">
+  <div className="relative pl-2 -mt-16 flex items-end gap-4">
+  <div className="w-32 h-32 rounded-full ring-4 ring-neutral-200 bg-white overflow-hidden flex items-center justify-center text-muted text-sm relative">
           {avatar ? <img src={avatar} alt="avatar" className="object-cover w-full h-full" /> : remoteAvatar ? <img src={remoteAvatar} alt="avatar" className="object-cover w-full h-full" /> : 'No Avatar'}
-          <label className="absolute bottom-1 right-1 bg-neutral-900/70 text-[10px] px-2 py-0.5 rounded cursor-pointer hover:bg-neutral-800">
+          <label className="absolute bottom-1 right-1 text-[10px] px-2 py-0.5 rounded cursor-pointer" style={{background:'color-mix(in srgb, var(--panel) 88%, black 6%)'}}>
             Sửa
             <input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={e=>handleFile(e,setAvatar)} />
           </label>
@@ -121,19 +121,19 @@ export default function Profile(){
         </div>
       </div>
       {/* EDIT FIELDS */}
-      <div className="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5 space-y-5">
+  <div className="bg-transparent border border-white/6 rounded-lg p-5 space-y-5 card">
         <div className="grid md:grid-cols-2 gap-5">
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-wide text-neutral-400">Username</label>
-            <input value={username} onChange={e=>setUsername(e.target.value)} className="w-full text-sm rounded bg-neutral-800 border border-neutral-700 focus:border-violet-500 focus:ring-violet-500 px-3 py-2 outline-none" />
+            <input value={username} onChange={e=>setUsername(e.target.value)} className="w-full text-sm rounded bg-white border border-neutral-200 focus:border-[color:var(--accent)] focus:ring-[color:var(--accent)] px-3 py-2 outline-none" />
           </div>
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-wide text-neutral-400">Website</label>
-            <input value={website} onChange={e=>setWebsite(e.target.value)} placeholder="https://..." className="w-full text-sm rounded bg-neutral-800 border border-neutral-700 focus:border-violet-500 focus:ring-violet-500 px-3 py-2 outline-none" />
+            <input value={website} onChange={e=>setWebsite(e.target.value)} placeholder="https://..." className="w-full text-sm rounded bg-white border border-neutral-200 focus:border-[color:var(--accent)] focus:ring-[color:var(--accent)] px-3 py-2 outline-none" />
           </div>
           <div className="space-y-2 md:col-span-2">
             <label className="text-xs uppercase tracking-wide text-neutral-400">Bio</label>
-            <textarea value={bio} onChange={e=>setBio(e.target.value)} rows={3} className="w-full resize-none text-sm rounded bg-neutral-800 border border-neutral-700 focus:border-violet-500 focus:ring-violet-500 px-3 py-2 outline-none" placeholder="Giới thiệu ngắn..." />
+            <textarea value={bio} onChange={e=>setBio(e.target.value)} rows={3} className="w-full resize-none text-sm rounded bg-white border border-neutral-200 focus:border-[color:var(--accent)] focus:ring-[color:var(--accent)] px-3 py-2 outline-none" placeholder="Giới thiệu ngắn..." />
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -146,7 +146,7 @@ export default function Profile(){
         {bio && <div className="text-sm text-neutral-300 whitespace-pre-wrap">{bio}</div>}
       </div>
       {/* TABS */}
-      <div className="border-b border-neutral-800 flex gap-8 px-2 text-sm">
+  <div className="border-b border-white/6 flex gap-8 px-2 text-sm">
         {TABS.map(t => (
           <button key={t.key} onClick={()=>setActiveTab(t.key)} className={`py-3 relative ${activeTab===t.key?'text-white':'text-neutral-500 hover:text-neutral-300'}`}>
             {t.label}
