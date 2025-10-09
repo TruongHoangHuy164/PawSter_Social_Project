@@ -35,10 +35,18 @@ export default function LayoutShell(){
           </div>
           <nav className="hidden md:flex gap-2">
             <NavItem to="/">Feed</NavItem>
-            <NavItem to="/friends">Friends</NavItem>
-            <NavItem to="/qr">QR</NavItem>
-            <NavItem to="/upgrade">Upgrade</NavItem>
-            <NavItem to="/profile">Profile</NavItem>
+            {user?.isAdmin ? (
+              <>
+                <NavItem to="/admin">Admin</NavItem>
+              </>
+            ) : (
+              <>
+                <NavItem to="/friends">Friends</NavItem>
+                <NavItem to="/qr">QR</NavItem>
+                <NavItem to="/upgrade">Upgrade</NavItem>
+                <NavItem to="/profile">Profile</NavItem>
+              </>
+            )}
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <button aria-label="Chuyển nền sáng/tối" title="Toggle theme" onClick={()=>setTheme(t=>t==='light'?'dark':'light')} className="px-2 py-1 rounded-md border border-transparent hover:border-black/6 dark:hover:border-white/10 transition pop bg-transparent">
@@ -61,7 +69,7 @@ export default function LayoutShell(){
         <Outlet />
       </main>
 
-  <BottomBar />
+  {!user?.isAdmin && <BottomBar />}
     </div>
   );
 }
