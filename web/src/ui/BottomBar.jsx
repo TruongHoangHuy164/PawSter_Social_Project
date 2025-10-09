@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { HomeIcon as HomeOutline, MagnifyingGlassIcon, PlusCircleIcon, HeartIcon as HeartOutline, UserCircleIcon } from '@heroicons/react/24/outline';
-import { HomeIcon as HomeSolid, HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
+import { HomeIcon as HomeOutline, ChatBubbleOvalLeftIcon as ChatOutline, PlusCircleIcon, HeartIcon as HeartOutline, UserCircleIcon } from '@heroicons/react/24/outline';
+import { HomeIcon as HomeSolid, HeartIcon as HeartSolid, ChatBubbleOvalLeftIcon as ChatSolid } from '@heroicons/react/24/solid';
 
 /*
   BottomBar navigation (mobile-first)
@@ -12,7 +12,7 @@ import { HomeIcon as HomeSolid, HeartIcon as HeartSolid } from '@heroicons/react
 const iconClasses = 'w-6 h-6';
 
 const HomeIcon = ({ active }) => active ? <HomeSolid className={iconClasses} /> : <HomeOutline className={iconClasses} />;
-const SearchIcon = () => <MagnifyingGlassIcon className={iconClasses} />;
+const MessageIcon = ({ active }) => active ? <ChatSolid className={iconClasses} /> : <ChatOutline className={iconClasses} />;
 const AddIcon = () => <PlusCircleIcon className={iconClasses} />;
 const HeartIcon = ({ active }) => active ? <HeartSolid className={iconClasses} /> : <HeartOutline className={iconClasses} />;
 const UserIcon = () => <UserCircleIcon className={iconClasses} />;
@@ -48,7 +48,7 @@ export default function BottomBar({ onAdd }) {
     <div className="fixed bottom-0 inset-x-0 z-30 bg-opacity-60 backdrop-blur border-t" style={{borderColor:'var(--panel-border)'}}>
       <div className="max-w-4xl mx-auto flex items-stretch justify-around px-3 md:px-6 py-3 container">
         <Item to="/" label="Home" Icon={HomeIcon} />
-        <Item to="/search" label="Tìm" Icon={SearchIcon} />
+  <Item to="/messages" label="Tin nhắn" Icon={MessageIcon} />
         <button
           onClick={openComposer}
           className="relative -mt-6 md:mt-0 md:mb-2 bg-gradient-to-br from-var(--accent) to-violet-500 text-white w-14 h-14 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-xl transform-gpu hover:scale-105 pop float"
