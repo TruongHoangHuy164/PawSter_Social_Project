@@ -8,3 +8,5 @@ export { default as QR } from './qr/QR.jsx';
 export { default as Search } from './search/Search.jsx';
 export { default as Favorites } from './favorites/Favorites.jsx';
 export { default as Messages } from './messages/Messages.jsx';
+export { default as TagFeed } from './tag/TagFeed.jsx';
+

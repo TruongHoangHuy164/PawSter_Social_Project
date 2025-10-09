@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '../state/auth.jsx';
-import { Feed, Login, Register, Profile, Friends, Upgrade, QR, Search, Favorites, Messages } from './index.js';
+import { Feed, Login, Register, Profile, Friends, Upgrade, QR, Search, Favorites, Messages, TagFeed } from './index.js';
 import AdminLayout from './admin/AdminLayout.jsx';
 import AdminDashboard from './admin/Dashboard.jsx';
 import AdminUsers from './admin/Users.jsx';
@@ -39,6 +39,7 @@ export default function App() {
           <Route path="/search" element={<Protected><Messages /></Protected>} />
           <Route path="/messages" element={<Protected><Messages /></Protected>} />
           <Route path="/favorites" element={<Protected><Favorites /></Protected>} />
+         
           <Route path="/admin" element={<AdminProtected><AdminLayout /></AdminProtected>}>
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
