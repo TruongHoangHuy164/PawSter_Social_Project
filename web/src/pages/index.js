@@ -1,13 +1,14 @@
-export { default as Login } from './auth/Login.jsx';
-export { default as Register } from './auth/Register.jsx';
-export { default as Feed } from './feed/Feed.jsx';
-export { default as Friends } from './friends/Friends.jsx';
-export { default as Profile } from './profile/Profile.jsx';
-export { default as Upgrade } from './upgrade/Upgrade.jsx';
-export { default as QR } from './qr/QR.jsx';
-export { default as Search } from './search/Search.jsx';
-export { default as Favorites } from './favorites/Favorites.jsx';
-export { default as Messages } from './messages/Messages.jsx';
-export { default as TagFeed } from './tag/TagFeed.jsx';
-export { default as PaymentReturn } from './payment/PaymentReturn.jsx';
-
+export { default as Login } from "./auth/Login.jsx";
+export { default as Register } from "./auth/Register.jsx";
+export { default as Feed } from "./feed/Feed.jsx";
+export { default as Friends } from "./friends/Friends.jsx";
+export { default as FriendRequests } from "./friends/FriendRequests.jsx";
+export { default as SearchUsers } from "./friends/SearchUsers.jsx";
+export { default as Profile } from "./profile/Profile.jsx";
+export { default as Upgrade } from "./upgrade/Upgrade.jsx";
+export { default as QR } from "./qr/QR.jsx";
+export { default as Search } from "./search/Search.jsx";
+export { default as Favorites } from "./favorites/Favorites.jsx";
+export { default as Messages } from "./messages/Messages.jsx";
+export { default as TagFeed } from "./tag/TagFeed.jsx";
+export { default as PaymentReturn } from "./payment/PaymentReturn.jsx";
