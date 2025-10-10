@@ -28,6 +28,14 @@ export default function Profile(){
   const [msg, setMsg] = useState('');
   const [threads, setThreads] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const proExpiryStr = React.useMemo(()=>{
+    if (!user?.proExpiry) return '';
+    try {
+      const d = new Date(user.proExpiry);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toLocaleString('vi-VN');
+    } catch { return ''; }
+  }, [user?.proExpiry]);
 
   // Fetch threads once (simple load) for demonstration
   React.useEffect(()=>{
@@ -116,7 +124,12 @@ export default function Profile(){
           <div className="flex gap-4 text-xs text-neutral-400">
             <span><span className="text-neutral-200 font-medium">{user.friends?.length||0}</span> người theo dõi</span>
             <span><span className="text-neutral-200 font-medium">{(user.friendLimit)||0}</span> giới hạn</span>
-            {user.isPro && <span className="text-violet-400">PRO</span>}
+            {user.isPro && (
+              <span className="text-violet-400 flex items-center gap-2">
+                <span>PRO</span>
+                {proExpiryStr && <span className="text-neutral-400">(hết hạn: {proExpiryStr})</span>}
+              </span>
+            )}
           </div>
         </div>
       </div>

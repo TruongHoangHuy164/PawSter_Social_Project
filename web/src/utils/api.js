@@ -7,7 +7,12 @@ async function request(path, method='GET', body, token) {
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${BASE}${path}`, { method, headers, body: body ? (isFormData ? body : JSON.stringify(body)) : undefined });
   const data = await res.json().catch(()=>({}));
-  if (!res.ok) throw new Error(data.message || 'Request failed');
+  if (!res.ok) {
+    const err = new Error(data?.message || 'Request failed');
+    err.status = res.status;
+    err.data = data; // include full server payload for debugging (e.g., MoMo subErrors)
+    throw err;
+  }
   return { status: res.status, data };
 }
 

@@ -2,7 +2,31 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+// Load base .env first
 dotenv.config();
+
+// If NODE_ENV=test, merge variables from .env.test (without overriding existing)
+if (process.env.NODE_ENV === 'test') {
+  const envTestPath = path.resolve('.env.test');
+  if (fs.existsSync(envTestPath)) {
+    try {
+      const testContent = fs.readFileSync(envTestPath);
+      // Try direct parse (assume utf8). If fails, try utf16le
+      let parsed;
+      try {
+        parsed = dotenv.parse(testContent.toString('utf8'));
+      } catch {
+        parsed = dotenv.parse(testContent.toString('utf16le'));
+      }
+      for (const [k, v] of Object.entries(parsed)) {
+        if (!process.env[k]) process.env[k] = v;
+      }
+      console.log('🧪 Loaded test environment from .env.test');
+    } catch (e) {
+      console.warn('Failed to load .env.test:', e.message);
+    }
+  }
+}
 
 // Fallback: if essential vars missing, attempt UTF-16LE parse (user's .env was saved UTF-16)
 if (!process.env.MONGO_URI) {
