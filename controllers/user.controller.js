@@ -195,13 +195,20 @@ export const sendFriendRequest = asyncHandler(async (req, res) => {
   }
 
   // Check friend limits
-  if (
-    targetUser.friends.length >= targetUser.friendLimit ||
-    req.user.friends.length >= req.user.friendLimit
-  ) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Friend limit reached" });
+  if (req.user.friends.length >= req.user.friendLimit) {
+    const userType = req.user.isPro ? "Pro" : "thường";
+    return res.status(400).json({
+      success: false,
+      message: `Bạn đã đạt giới hạn kết bạn! Tài khoản ${userType} chỉ có thể kết bạn tối đa ${req.user.friendLimit} người. Hiện tại bạn đã có ${req.user.friends.length} bạn bè.`,
+    });
+  }
+
+  if (targetUser.friends.length >= targetUser.friendLimit) {
+    const targetUserType = targetUser.isPro ? "Pro" : "thường";
+    return res.status(400).json({
+      success: false,
+      message: `${targetUser.username} đã đạt giới hạn kết bạn! Tài khoản ${targetUserType} chỉ có thể kết bạn tối đa ${targetUser.friendLimit} người.`,
+    });
   }
 
   // Check if request already exists
@@ -382,13 +389,20 @@ export const acceptFriend = asyncHandler(async (req, res) => {
   if (!fromUser || !toUser)
     return res.status(404).json({ success: false, message: "Users missing" });
 
-  if (
-    fromUser.friends.length >= fromUser.friendLimit ||
-    toUser.friends.length >= toUser.friendLimit
-  ) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Friend limit reached" });
+  if (fromUser.friends.length >= fromUser.friendLimit) {
+    const fromUserType = fromUser.isPro ? "Pro" : "thường";
+    return res.status(400).json({
+      success: false,
+      message: `Không thể chấp nhận lời mời! Bạn đã đạt giới hạn kết bạn. Tài khoản ${fromUserType} chỉ có thể kết bạn tối đa ${fromUser.friendLimit} người.`,
+    });
+  }
+
+  if (toUser.friends.length >= toUser.friendLimit) {
+    const toUserType = toUser.isPro ? "Pro" : "thường";
+    return res.status(400).json({
+      success: false,
+      message: `Không thể chấp nhận lời mời! Bạn đã đạt giới hạn kết bạn. Tài khoản ${toUserType} chỉ có thể kết bạn tối đa ${toUser.friendLimit} người.`,
+    });
   }
 
   fromUser.friends.push(toUser._id);
@@ -432,26 +446,34 @@ export const cancelFriendRequest = asyncHandler(async (req, res) => {
 // Remove friend (unfriend)
 export const removeFriend = asyncHandler(async (req, res) => {
   const friendId = req.params.id;
-  
+
   if (String(friendId) === String(req.user._id)) {
-    return res.status(400).json({ success: false, message: "Cannot unfriend yourself" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Cannot unfriend yourself" });
   }
 
   const currentUser = await User.findById(req.user._id);
   const friendUser = await User.findById(friendId);
-  
+
   if (!friendUser) {
     return res.status(404).json({ success: false, message: "User not found" });
   }
 
   // Check if they are actually friends
   if (!currentUser.friends.includes(friendId)) {
-    return res.status(400).json({ success: false, message: "Not friends with this user" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Not friends with this user" });
   }
 
   // Remove each other from friends lists
-  currentUser.friends = currentUser.friends.filter(id => String(id) !== String(friendId));
-  friendUser.friends = friendUser.friends.filter(id => String(id) !== String(req.user._id));
+  currentUser.friends = currentUser.friends.filter(
+    (id) => String(id) !== String(friendId)
+  );
+  friendUser.friends = friendUser.friends.filter(
+    (id) => String(id) !== String(req.user._id)
+  );
 
   // Save both users
   await Promise.all([currentUser.save(), friendUser.save()]);

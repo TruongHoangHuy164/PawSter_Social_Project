@@ -55,6 +55,8 @@ export default function SearchUsers() {
       searchUsers(query);
     } catch (error) {
       console.error("Error sending friend request:", error);
+      // Hiển thị thông báo lỗi từ server
+      alert(error.message || "Có lỗi xảy ra khi gửi lời mời kết bạn");
     }
   };
 
@@ -76,7 +78,11 @@ export default function SearchUsers() {
   };
 
   const handleRemoveFriend = async (userId, username) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa ${username} khỏi danh sách bạn bè?`)) {
+    if (
+      !window.confirm(
+        `Bạn có chắc chắn muốn xóa ${username} khỏi danh sách bạn bè?`
+      )
+    ) {
       return;
     }
 

@@ -1,21 +1,21 @@
-import React from 'react';
+import React from "react";
 
-export default function ConfirmModal({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  title = "Xác nhận", 
+export default function ConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title = "Xác nhận",
   message = "Bạn có chắc chắn muốn thực hiện hành động này?",
   confirmText = "Xác nhận",
   cancelText = "Hủy",
-  type = "danger" // danger, warning, info
+  type = "danger", // danger, warning, info
 }) {
   if (!isOpen) return null;
 
   const typeStyles = {
     danger: "bg-red-600 hover:bg-red-700",
-    warning: "bg-yellow-600 hover:bg-yellow-700", 
-    info: "bg-blue-600 hover:bg-blue-700"
+    warning: "bg-yellow-600 hover:bg-yellow-700",
+    info: "bg-blue-600 hover:bg-blue-700",
   };
 
   return (
@@ -23,7 +23,7 @@ export default function ConfirmModal({
       <div className="bg-neutral-800 p-6 rounded-lg max-w-md w-full mx-4">
         <h3 className="text-lg font-semibold mb-4">{title}</h3>
         <p className="text-neutral-300 mb-6">{message}</p>
-        
+
         <div className="flex space-x-3 justify-end">
           <button
             onClick={onClose}

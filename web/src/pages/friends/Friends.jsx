@@ -34,7 +34,7 @@ export default function Friends() {
   };
 
   const handleRemoveFriend = async (friendId) => {
-    const friend = friends.find(f => f._id === friendId);
+    const friend = friends.find((f) => f._id === friendId);
     setFriendToRemove(friend);
     setShowConfirmModal(true);
   };
