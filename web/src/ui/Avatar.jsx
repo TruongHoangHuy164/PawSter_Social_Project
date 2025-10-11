@@ -14,7 +14,11 @@ export default function Avatar({ user, size = "md" }) {
   if (!user?.avatarUrl || imageError) {
     return (
       <div
-        className={`${sizeClasses[size]} bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center font-medium text-white shadow-md`}
+        className={`${
+          sizeClasses[size]
+        } bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center font-medium text-white shadow-md ring-2 ${
+          user?.isPro ? "ring-amber-400" : "ring-neutral-700"
+        }`}
       >
         {user?.username?.[0]?.toUpperCase() || "?"}
       </div>
@@ -26,7 +30,11 @@ export default function Avatar({ user, size = "md" }) {
     <img
       src={user.avatarUrl}
       alt={`${user.username}'s avatar`}
-      className={`${sizeClasses[size]} rounded-full object-cover border-2 border-neutral-600 shadow-md`}
+      className={`${
+        sizeClasses[size]
+      } rounded-full object-cover border-2 border-neutral-700 shadow-md ring-2 ${
+        user?.isPro ? "ring-amber-400" : "ring-neutral-800"
+      }`}
       onError={() => setImageError(true)}
     />
   );

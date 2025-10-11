@@ -140,7 +140,7 @@ export default function SearchUsers() {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Tìm kiếm bạn bè</h1>
 
       {/* Search Input */}
@@ -150,7 +150,7 @@ export default function SearchUsers() {
           placeholder="Tìm kiếm theo tên hoặc email..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full p-3 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:border-blue-500"
+          className="w-full p-3 bg-neutral-900 border border-neutral-800 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-violet-500"
         />
       </div>
 
@@ -177,38 +177,41 @@ export default function SearchUsers() {
 
       {/* Search Results */}
       {users.length > 0 && (
-        <div className="space-y-4">
+        <div className="grid gap-4">
           {users.map((user) => (
-            <div key={user._id} className="card p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Avatar user={user} size="lg" />
-                  <div>
-                    <h3 className="font-medium text-lg">{user.username}</h3>
-                    <p className="text-sm text-neutral-400">{user.email}</p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      {user.isPro && (
-                        <span className="text-xs bg-yellow-600 text-white px-2 py-0.5 rounded">
-                          PRO
-                        </span>
-                      )}
-                      {user.badges && user.badges.length > 0 && (
-                        <div className="flex space-x-1">
-                          {user.badges.map((badge, index) => (
-                            <span
-                              key={index}
-                              className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded"
-                            >
-                              {badge}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+            <div
+              key={user._id}
+              className="p-4 bg-[linear-gradient(180deg,#071025,transparent)] border border-neutral-800 rounded-lg flex items-center justify-between hover:shadow-lg transition-shadow"
+            >
+              <div className="flex items-center space-x-4">
+                <Avatar user={user} size="lg" />
+                <div>
+                  <h3 className="font-semibold text-lg text-white">
+                    {user.username}
+                  </h3>
+                  <p className="text-sm text-neutral-400">{user.email}</p>
+                  <div className="flex items-center space-x-2 mt-1">
+                    {user.isPro && (
+                      <span className="text-xs bg-amber-500 text-black px-2 py-0.5 rounded">
+                        PRO
+                      </span>
+                    )}
+                    {user.badges && user.badges.length > 0 && (
+                      <div className="flex space-x-1">
+                        {user.badges.map((badge, index) => (
+                          <span
+                            key={index}
+                            className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded"
+                          >
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div>{getFriendshipButton(user)}</div>
               </div>
+              <div>{getFriendshipButton(user)}</div>
             </div>
           ))}
         </div>

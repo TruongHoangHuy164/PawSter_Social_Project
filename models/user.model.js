@@ -37,7 +37,7 @@ userSchema.methods.comparePassword = function (candidate) {
 };
 
 userSchema.virtual("friendLimit").get(function () {
-  return this.isPro ? 30 : 20;
+  return this.isPro ? 200 : 20;
 });
 
 export const User = mongoose.model("User", userSchema);

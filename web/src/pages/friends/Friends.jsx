@@ -13,6 +13,7 @@ export default function Friends() {
   const [activeTab, setActiveTab] = useState("friends");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [friendToRemove, setFriendToRemove] = useState(null);
+  const [filter, setFilter] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -57,57 +58,110 @@ export default function Friends() {
       case "friends":
         return (
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Danh sách bạn bè</h2>
-              <div className="text-sm text-neutral-400">
-                {friends.length}/{user?.isPro ? 200 : 20}
+            {/* Stats & Search */}
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div className="md:col-span-2">
+                <h2 className="text-2xl font-bold">Danh sách bạn bè</h2>
+                <p className="text-sm text-neutral-400">
+                  Những người bạn đang kết nối trên PawSter
+                </p>
+              </div>
+              <div className="flex items-center justify-end md:justify-end gap-4">
+                <div className="w-full md:w-[220px]">
+                  <input
+                    type="text"
+                    placeholder="Lọc theo tên..."
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                    className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg placeholder-neutral-500 dark:placeholder-neutral-400 text-neutral-900 dark:text-white focus:outline-none focus:border-violet-500"
+                    aria-label="Lọc bạn bè"
+                  />
+                </div>
+                <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                  {friends.length}/
+                  {user?.friendLimit ?? (user?.isPro ? 200 : 20)}
+                </div>
+                <button
+                  onClick={() => setActiveTab("search")}
+                  className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded text-sm"
+                >
+                  Tìm bạn
+                </button>
               </div>
             </div>
+
             {loading && (
               <div className="text-sm text-neutral-500">Đang tải...</div>
             )}
             {!loading && friends.length === 0 && (
               <div className="text-sm text-neutral-500">Chưa có bạn bè.</div>
             )}
-            <ul className="space-y-3">
-              {friends.map((f) => (
-                <li
-                  key={f._id}
-                  className="p-3 card rounded flex items-center justify-between transition-pop"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Avatar user={f} size="md" />
-                    <div>
-                      <div className="font-medium">{f.username}</div>
-                      <div className="text-xs text-neutral-400">{f.email}</div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {friends
+                .filter((f) =>
+                  filter
+                    ? f.username?.toLowerCase().includes(filter.toLowerCase())
+                    : true
+                )
+                .map((f) => (
+                  <div
+                    key={f._id}
+                    className="p-4 bg-white dark:bg-[linear-gradient(180deg,#0b1220,transparent)] border border-neutral-200 dark:border-neutral-800 rounded-lg flex items-center gap-4 shadow-sm hover:shadow-md transition"
+                  >
+                    <Avatar user={f} size="lg" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold text-lg text-neutral-900 dark:text-white">
+                            {f.username}
+                          </div>
+                          <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                            @{f.username} • {f.email}
+                          </div>
+                        </div>
+                        <div className="text-right flex flex-col items-end">
+                          <div className="text-sm">
+                            {f.isPro && (
+                              <span className="text-xs bg-amber-500 text-black px-2 py-0.5 rounded mr-2">
+                                PRO
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                            Joined
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {f.badges &&
+                            f.badges.slice(0, 3).map((badge, index) => (
+                              <span
+                                key={index}
+                                className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded"
+                              >
+                                {badge}
+                              </span>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleRemoveFriend(f._id)}
+                            className="px-3 py-1 rounded border border-neutral-200 dark:border-neutral-700 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-700/10"
+                          >
+                            Xóa
+                          </button>
+                          <button className="px-3 py-1 rounded bg-neutral-100 dark:bg-neutral-800 text-sm text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-700">
+                            Nhắn
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    {f.isPro && (
-                      <span className="text-xs bg-yellow-600 text-white px-2 py-0.5 rounded">
-                        PRO
-                      </span>
-                    )}
-                    {f.badges &&
-                      f.badges.map((badge, index) => (
-                        <span
-                          key={index}
-                          className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded"
-                        >
-                          {badge}
-                        </span>
-                      ))}
-                    <button
-                      onClick={() => handleRemoveFriend(f._id)}
-                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-colors"
-                      title="Xóa bạn bè"
-                    >
-                      Xóa bạn
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                ))}
+            </div>
           </div>
         );
       case "requests":
