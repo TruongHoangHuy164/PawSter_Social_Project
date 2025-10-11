@@ -207,13 +207,14 @@ export default function Profile() {
               <span className="text-neutral-200 font-medium">
                 {user.friendCount ?? user.friends?.length ?? 0}
               </span>{" "}
-              người theo dõi
+              bạn bè
             </span>
             <span>
+              Giới hạn:{" "}
               <span className="text-neutral-200 font-medium">
-                {user.friendLimit ?? 0}
-              </span>{" "}
-              giới hạn
+                {user.friendCount ?? user.friends?.length ?? 0}/
+                {user.friendLimit ?? (user?.isPro ? 200 : 20)}
+              </span>
             </span>
             {user.isPro && (
               <span className="text-violet-400 flex items-center gap-2">
