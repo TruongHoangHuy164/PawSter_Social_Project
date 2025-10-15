@@ -421,8 +421,8 @@ export default function CommentSection({ threadId, onCommentCountChange }) {
       {/* WebSocket Connection Status */}
       {!connected && (
         <div className="text-center py-2">
-          <div className="inline-flex items-center gap-2 text-xs text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+          <div className="inline-flex items-center gap-2 text-xs text-[color:var(--muted)] bg-white/60 px-3 py-1 rounded-full border" style={{borderColor:'var(--panel-border)'}}>
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{background:'var(--pet-accent)'}}></div>
             Đang kết nối...
           </div>
         </div>
@@ -469,7 +469,7 @@ export default function CommentSection({ threadId, onCommentCountChange }) {
               <button
                 onClick={loadMoreComments}
                 disabled={loadingMore}
-                className="px-4 py-2 text-sm rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+                className="btn-lux text-sm disabled:opacity-50"
               >
                 {loadingMore ? 'Đang tải...' : `Hiển thị thêm bình luận (còn ${totalComments - comments.length})`}
               </button>
