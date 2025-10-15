@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '../state/auth.jsx';
+import { SocketProvider } from '../state/socket.jsx';
 import { Feed, Login, Register, Profile, Friends, Upgrade, QR, Search, Favorites, Messages, TagFeed, PaymentReturn } from './index.js';
 import AdminLayout from './admin/AdminLayout.jsx';
 import AdminDashboard from './admin/Dashboard.jsx';
@@ -27,30 +28,32 @@ const AdminProtected = ({ children }) => {
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-  <Route path="/login" element={<Login />} />
-  <Route path="/register" element={<Register />} />
-        <Route element={<LayoutShell />}> 
-          <Route index element={<Protected><Feed /></Protected>} />
-          <Route path="/profile" element={<Protected><Profile /></Protected>} />
-          <Route path="/friends" element={<Protected><Friends /></Protected>} />
-          <Route path="/upgrade" element={<Protected><Upgrade /></Protected>} />
-          <Route path="/qr" element={<Protected><QR /></Protected>} />
-          <Route path="/search" element={<Protected><Messages /></Protected>} />
-          <Route path="/messages" element={<Protected><Messages /></Protected>} />
-          <Route path="/favorites" element={<Protected><Favorites /></Protected>} />
-          <Route path="/tag/:tag" element={<Protected><TagFeed /></Protected>} />
-          <Route path="/payment/return" element={<Protected><PaymentReturn /></Protected>} />
-         
-          <Route path="/admin" element={<AdminProtected><AdminLayout /></AdminProtected>}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="threads" element={<AdminThreads />} />
-            <Route path="payments" element={<AdminPayments />} />
+      <SocketProvider>
+        <Routes>
+    <Route path="/login" element={<Login />} />
+    <Route path="/register" element={<Register />} />
+          <Route element={<LayoutShell />}> 
+            <Route index element={<Protected><Feed /></Protected>} />
+            <Route path="/profile" element={<Protected><Profile /></Protected>} />
+            <Route path="/friends" element={<Protected><Friends /></Protected>} />
+            <Route path="/upgrade" element={<Protected><Upgrade /></Protected>} />
+            <Route path="/qr" element={<Protected><QR /></Protected>} />
+            <Route path="/search" element={<Protected><Messages /></Protected>} />
+            <Route path="/messages" element={<Protected><Messages /></Protected>} />
+            <Route path="/favorites" element={<Protected><Favorites /></Protected>} />
+            <Route path="/tag/:tag" element={<Protected><TagFeed /></Protected>} />
+            <Route path="/payment/return" element={<Protected><PaymentReturn /></Protected>} />
+           
+            <Route path="/admin" element={<AdminProtected><AdminLayout /></AdminProtected>}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="threads" element={<AdminThreads />} />
+              <Route path="payments" element={<AdminPayments />} />
+            </Route>
           </Route>
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </SocketProvider>
     </AuthProvider>
   );
 }

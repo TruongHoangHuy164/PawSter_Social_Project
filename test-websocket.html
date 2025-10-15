@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test WebSocket</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <div id="status">Disconnected</div>
+    <div id="logs"></div>
+    
+    <script>
+        const logs = document.getElementById('logs');
+        const status = document.getElementById('status');
+        
+        function addLog(message) {
+            const div = document.createElement('div');
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            logs.appendChild(div);
+            console.log(message);
+        }
+        
+        // Test with a dummy token - replace with real token from localStorage
+        const token = prompt("Enter your JWT token:");
+        
+        if (token) {
+            const socket = io('http://localhost:3000', {
+                auth: { token: token }
+            });
+            
+            socket.on('connect', () => {
+                status.textContent = 'Connected';
+                status.style.color = 'green';
+                addLog('Connected to WebSocket server');
+                
+                // Join a test thread
+                socket.emit('join_thread', '670730d1bc4b3e7cbe9e6b93'); // Replace with real thread ID
+                addLog('Joined test thread');
+            });
+            
+            socket.on('disconnect', () => {
+                status.textContent = 'Disconnected';
+                status.style.color = 'red';
+                addLog('Disconnected from WebSocket server');
+            });
+            
+            socket.on('new_comment', (data) => {
+                addLog('Received new_comment: ' + JSON.stringify(data));
+            });
+            
+            socket.on('comment_deleted', (data) => {
+                addLog('Received comment_deleted: ' + JSON.stringify(data));
+            });
+            
+            socket.on('comment_liked', (data) => {
+                addLog('Received comment_liked: ' + JSON.stringify(data));
+            });
+            
+            socket.on('connect_error', (error) => {
+                addLog('Connection error: ' + error.message);
+            });
+        }
+    </script>
+</body>
+</html>

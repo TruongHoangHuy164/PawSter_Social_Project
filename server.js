@@ -54,10 +54,15 @@ if (!process.env.MONGO_URI) {
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import { connectDB } from './config/db.js';
+import { User } from './models/user.model.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import threadRoutes from './routes/thread.routes.js';
+import commentRoutes from './routes/comment.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import qrRoutes from './routes/qr.routes.js';
 import mediaRoutes from './routes/media.routes.js';
@@ -68,7 +73,21 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import { verifyS3Connection } from './utils/s3.js';
 
 const app = express();
-app.use(cors());
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: [
+      process.env.FRONTEND_URL],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+app.use(cors({
+  origin: [
+    process.env.FRONTEND_URL],
+  credentials: true
+}));
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('dev'));
 
@@ -85,9 +104,16 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/api/health', (req, res) => res.json({ success: true, message: 'OK' }));
 
+// Make io accessible to routes - MUST be before route definitions
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/threads', threadRoutes);
+app.use('/api/comments', commentRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/media', mediaRoutes);
@@ -111,11 +137,74 @@ if (!process.env.MONGO_URI) {
   console.warn('⚠️  MONGO_URI not found in environment. Using fallback in-memory server will fail (no in-memory configured). Update .env');
 }
 
+// Socket.IO connection handling with authentication
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    console.log('🔐 WebSocket auth attempt:', { 
+      hasToken: !!token, 
+      tokenLength: token?.length,
+      socketId: socket.id 
+    });
+    
+    if (!token) {
+      console.log('❌ No token provided');
+      return next(new Error('No token provided'));
+    }
+
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('✅ JWT verified for user:', decoded.id);
+    
+    // Get user from database
+    const user = await User.findById(decoded.id).select('-password');
+    
+    if (!user) {
+      console.log('❌ User not found:', decoded.id);
+      return next(new Error('User not found'));
+    }
+
+    console.log('✅ User authenticated:', user.username);
+    
+    // Attach user to socket
+    socket.userId = user._id;
+    socket.user = user;
+    next();
+  } catch (error) {
+    console.error('❌ WebSocket auth error:', error.message);
+    next(new Error('Authentication failed'));
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log(`🔌 User connected: ${socket.id} (User: ${socket.user?.username})`);
+
+  // Join thread room for real-time updates
+  socket.on('join_thread', (threadId) => {
+    socket.join(`thread_${threadId}`);
+    console.log(`📱 User ${socket.user?.username} (${socket.id}) joined thread ${threadId}`);
+    
+    // Send confirmation back to client
+    socket.emit('joined_thread', { threadId, timestamp: new Date().toISOString() });
+  });
+
+  // Leave thread room
+  socket.on('leave_thread', (threadId) => {
+    socket.leave(`thread_${threadId}`);
+    console.log(`📱 User ${socket.user?.username} (${socket.id}) left thread ${threadId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 User disconnected: ${socket.id} (User: ${socket.user?.username})`);
+  });
+});
+
 connectDB()
   .then(async () => {
     // Fire and forget S3 verification (doesn't block server if it fails)
     verifyS3Connection().catch(()=>{});
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`🚀 Threads API is running on http://localhost:${PORT}`);
+      console.log(`🔌 WebSocket server is running`);
     });
   });

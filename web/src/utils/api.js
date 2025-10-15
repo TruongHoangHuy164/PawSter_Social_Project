@@ -23,3 +23,56 @@ export const api = {
   patch: (p, b, t) => request(p, 'PATCH', b, t),
   rawPatch: (p, formData, t) => request(p, 'PATCH', formData, t)
 };
+
+// Comment API functions
+export const commentApi = {
+  // Create a new comment
+  createComment: (commentData, token) => {
+    const { threadId, content, parentId, files } = commentData;
+    
+    if (files && files.length > 0) {
+      const formData = new FormData();
+      if (content) formData.append('content', content);
+      if (threadId) formData.append('threadId', threadId);
+      if (parentId) formData.append('parentId', parentId);
+      files.forEach(file => formData.append('media', file));
+      return request('/comments', 'POST', formData, token);
+    } else {
+      return request('/comments', 'POST', { threadId, content, parentId }, token);
+    }
+  },
+
+  // Get comments for a thread
+  getComments: (threadId, page = 1, limit = 20, parentId = null, token) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    if (parentId) params.append('parentId', parentId);
+    return request(`/comments/thread/${threadId}?${params}`, 'GET', undefined, token);
+  },
+
+  // Get replies for a comment
+  getReplies: (commentId, page = 1, limit = 10, token) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    return request(`/comments/${commentId}/replies?${params}`, 'GET', undefined, token);
+  },
+
+  // Update a comment
+  updateComment: (commentId, content, token) => {
+    return request(`/comments/${commentId}`, 'PATCH', { content }, token);
+  },
+
+  // Delete a comment
+  deleteComment: (commentId, token) => {
+    return request(`/comments/${commentId}`, 'DELETE', undefined, token);
+  },
+
+  // Like/Unlike a comment
+  toggleLike: (commentId, token) => {
+    return request(`/comments/${commentId}/like`, 'POST', undefined, token);
+  }
+};
