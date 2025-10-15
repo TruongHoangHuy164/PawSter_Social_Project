@@ -4,7 +4,16 @@ import { api } from '../utils/api.js';
 const AuthCtx = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  // sanitize token stored in localStorage (avoid 'null'/'undefined' strings)
+  const [token, setToken] = useState(() => {
+    try {
+      const t = localStorage.getItem('token');
+      if (!t || t === 'null' || t === 'undefined') return null;
+      return t;
+    } catch (e) {
+      return null;
+    }
+  });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(!!token);
 
@@ -22,8 +31,13 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => { fetchMe(); }, [fetchMe]);
 
-  const login = (tok) => { setToken(tok); localStorage.setItem('token', tok); setLoading(true); };
-  const logout = () => { setToken(null); setUser(null); localStorage.removeItem('token'); };
+  const login = (tok) => {
+    if (!tok || typeof tok !== 'string') return;
+    setToken(tok);
+    try { localStorage.setItem('token', tok); } catch(e) {}
+    setLoading(true);
+  };
+  const logout = () => { setToken(null); setUser(null); try { localStorage.removeItem('token'); } catch(e) {} };
 
   return <AuthCtx.Provider value={{ token, user, setUser, login, logout, loading }}>{children}</AuthCtx.Provider>;
 };

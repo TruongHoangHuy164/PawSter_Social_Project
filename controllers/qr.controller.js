@@ -15,8 +15,20 @@ export const scanQR = asyncHandler(async (req, res) => {
   const { token } = req.body;
   if (!token)
     return res.status(400).json({ success: false, message: "Token missing" });
+  // tolerate pasted JSON or prefixed strings
+  let tokenInput = typeof token === 'string' ? token.trim() : '';
+  try {
+    if (tokenInput.startsWith('{')) {
+      const parsed = JSON.parse(tokenInput);
+      tokenInput = parsed?.t || parsed?.token || tokenInput;
+    } else {
+      const m = tokenInput.match(/(?:token\s*[:=]\s*)?([A-Za-z0-9_-]{10,})/i);
+      if (m && m[1]) tokenInput = m[1];
+    }
+  } catch (e) {}
+
   const { valid, userId, reason } = verifyFriendQR(
-    token,
+    tokenInput,
     process.env.QR_SECRET
   );
   if (!valid) return res.status(400).json({ success: false, message: reason });
@@ -51,20 +63,24 @@ export const scanQR = asyncHandler(async (req, res) => {
     });
   }
 
-  const existing = await FriendRequest.findOne({
-    from: req.user._id,
-    to: target._id,
-  });
-  if (existing && existing.status === "pending") {
-    return res
-      .status(200)
-      .json({ success: true, message: "Request already pending" });
+  try {
+    const fr = await FriendRequest.findOneAndUpdate(
+      { from: req.user._id, to: target._id },
+      { $setOnInsert: { from: req.user._id, to: target._id, status: 'pending' } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    if (fr && fr.status === 'rejected') {
+      fr.status = 'pending';
+      await fr.save();
+      console.log('🔁 QR FriendRequest re-sent:', fr._id);
+      return res.json({ success: true, message: 'Request re-sent' });
+    }
+    console.log('🔔 QR FriendRequest created/upserted:', { id: fr._id, from: String(fr.from), to: String(fr.to), status: fr.status });
+    return res.status(201).json({ success: true, message: 'Friend request sent' });
+  } catch (err) {
+    if (err && (err.code === 11000 || err.code === '11000')) {
+      return res.status(200).json({ success: true, message: 'Request already pending' });
+    }
+    throw err;
   }
-  if (existing && existing.status === "rejected") {
-    existing.status = "pending";
-    await existing.save();
-    return res.json({ success: true, message: "Request re-sent" });
-  }
-  await FriendRequest.create({ from: req.user._id, to: target._id });
-  res.status(201).json({ success: true, message: "Friend request sent" });
 });

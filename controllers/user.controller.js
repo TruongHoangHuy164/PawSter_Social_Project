@@ -215,25 +215,27 @@ export const sendFriendRequest = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if request already exists
-  const existing = await FriendRequest.findOne({
-    from: req.user._id,
-    to: targetUserId,
-  });
-  if (existing && existing.status === "pending") {
-    return res
-      .status(400)
-      .json({ success: false, message: "Friend request already sent" });
+  // Use atomic upsert to create request or reopen a rejected one
+  try {
+    const fr = await FriendRequest.findOneAndUpdate(
+      { from: req.user._id, to: targetUserId },
+      { $setOnInsert: { from: req.user._id, to: targetUserId, status: 'pending' } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    if (fr && fr.status === 'rejected') {
+      fr.status = 'pending';
+      await fr.save();
+      console.log('🔁 Friend request re-sent (user.controller):', fr._id);
+      return res.json({ success: true, message: 'Friend request re-sent' });
+    }
+    console.log('🔔 FriendRequest created/upserted (user.controller):', { id: fr._id, from: String(fr.from), to: String(fr.to), status: fr.status });
+    return res.status(201).json({ success: true, message: 'Friend request sent' });
+  } catch (err) {
+    if (err && (err.code === 11000 || err.code === '11000')) {
+      return res.status(200).json({ success: true, message: 'Friend request already exists' });
+    }
+    throw err;
   }
-
-  if (existing && existing.status === "rejected") {
-    existing.status = "pending";
-    await existing.save();
-    return res.json({ success: true, message: "Friend request re-sent" });
-  }
-
-  await FriendRequest.create({ from: req.user._id, to: targetUserId });
-  res.status(201).json({ success: true, message: "Friend request sent" });
 });
 
 // Get received friend requests
