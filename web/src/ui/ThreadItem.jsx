@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import ProBadge from "./ProBadge.jsx"
+import CommentSection from "./CommentSection.jsx"
+import CommentInput from "./CommentInput.jsx"
 import { api } from "../utils/api.js"
 import { useAuth } from "../state/auth.jsx"
 
@@ -20,6 +22,7 @@ export default function ThreadItem({ thread, onDelete }) {
   const [scrollPosition, setScrollPosition] = useState(0)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
+  const [commentCount, setCommentCount] = useState(0)
 
   // Lightbox states
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -276,6 +279,19 @@ export default function ThreadItem({ thread, onDelete }) {
 
   const totalPages = Math.ceil(mediaCount / visibleCountForWidth)
   const currentPage = Math.floor(scrollPosition / ((tileW + gap) * visibleCountForWidth))
+
+  // Load comment count
+  useEffect(() => {
+    const loadCommentCount = async () => {
+      try {
+        const response = await api.get(`/comments/thread/${thread._id}?limit=1`, token)
+        setCommentCount(response.data.pagination?.total || 0)
+      } catch (err) {
+        console.error('Load comment count failed', err)
+      }
+    }
+    loadCommentCount()
+  }, [thread._id, token])
 
   return (
     <div className="p-5 rounded-xl space-y-3 card pop shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -578,6 +594,44 @@ export default function ThreadItem({ thread, onDelete }) {
         </div>
       )}
 
+      {/* Comment Input */}
+      <CommentInput 
+        threadId={thread._id}
+        onCommentCreated={() => {
+          setCommentCount(prev => prev + 1)
+          // Không cần setShowComments nữa vì comments luôn hiển thị
+        }}
+      />
+
+      {/* Comment Actions - Chỉ hiển thị số lượng comment */}
+      <div className="flex items-center gap-4 text-xs pt-2">
+        <div className="flex items-center gap-1 px-2 py-1 text-gray-500">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            <path d="M13 8H7"></path>
+            <path d="M17 12H7"></path>
+          </svg>
+          {commentCount} bình luận
+        </div>
+      </div>
+
+      {/* Comment Section - Luôn hiển thị */}
+      <div className="pt-4 border-t border-gray-100">
+        <CommentSection 
+          threadId={thread._id} 
+          onCommentCountChange={setCommentCount}
+        />
+      </div>
+
       {lightboxOpen && (
         <div
           className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-200 ${overlayVisible ? "opacity-100 backdrop-blur-sm" : "opacity-0"}`}
@@ -710,7 +764,7 @@ export default function ThreadItem({ thread, onDelete }) {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
         }

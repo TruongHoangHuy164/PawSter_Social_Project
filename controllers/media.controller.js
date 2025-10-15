@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import { Thread } from '../models/thread.model.js';
+import { Comment } from '../models/comment.model.js';
 import { getSignedMediaUrl } from '../utils/s3.js';
 
 // GET /api/media/thread/:threadId/:index
@@ -12,6 +13,21 @@ export const getThreadMediaSigned = asyncHandler(async (req, res) => {
   const i = Number(index);
   if (Number.isNaN(i) || i < 0 || i >= t.media.length) return res.status(400).json({ success: false, message: 'Invalid index' });
   const item = t.media[i];
+  // In future: enforce visibility rules (friends-only, etc.)
+  const signed = await getSignedMediaUrl(item.key, 3600); // 1h
+  res.json({ success: true, data: { url: signed, type: item.type, mimeType: item.mimeType } });
+});
+
+// GET /api/media/comment/:commentId/:index
+// Returns { url } presigned for video/audio/image retrieval if media exists and user can view comment
+export const getCommentMediaSigned = asyncHandler(async (req, res) => {
+  const { commentId, index } = req.params;
+  const comment = await Comment.findById(commentId).select('author media');
+  if (!comment) return res.status(404).json({ success: false, message: 'Comment not found' });
+  if (!comment.media || !comment.media.length) return res.status(404).json({ success: false, message: 'No media' });
+  const i = Number(index);
+  if (Number.isNaN(i) || i < 0 || i >= comment.media.length) return res.status(400).json({ success: false, message: 'Invalid index' });
+  const item = comment.media[i];
   // In future: enforce visibility rules (friends-only, etc.)
   const signed = await getSignedMediaUrl(item.key, 3600); // 1h
   res.json({ success: true, data: { url: signed, type: item.type, mimeType: item.mimeType } });
