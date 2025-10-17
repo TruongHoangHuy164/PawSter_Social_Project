@@ -13,7 +13,8 @@ export default function Login(){
   const submit = async (e)=>{
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const res = await api.post('/auth/login', form);
+      const payload = { email: (form.email || '').trim().toLowerCase(), password: form.password };
+      const res = await api.post('/auth/login', payload);
       const { token, user } = res.data.data || {};
       login(token);
       const isAdmin = !!(user && user.isAdmin);

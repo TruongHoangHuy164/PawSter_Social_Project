@@ -19,7 +19,9 @@ export const register = asyncHandler(async (req, res) => {
 });
 
 export const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const emailRaw = req.body?.email;
+  const password = req.body?.password;
+  const email = typeof emailRaw === 'string' ? emailRaw.trim().toLowerCase() : emailRaw;
   if (!email || !password) return res.status(400).json({ success: false, message: 'Missing credentials' });
   const user = await User.findOne({ email });
   if (!user) return res.status(401).json({ success: false, message: 'Invalid credentials' });

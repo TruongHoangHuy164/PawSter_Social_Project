@@ -3,6 +3,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../state/auth.jsx';
 import ProBadge from './ProBadge.jsx';
 import BottomBar from './BottomBar.jsx';
+import LeftSidebar from './LeftSidebar.jsx';
+import FloatingChatButton from './FloatingChatButton.jsx';
 
 const NavItem = ({ to, children }) => <NavLink to={to} className={({isActive})=>`px-3 py-2 rounded-full text-sm font-medium hover:shadow-sm ${isActive?`bg-[color:var(--panel)] text-[color:var(--accent)]`:'text-muted'}`}>{children}</NavLink>;
 
@@ -58,10 +60,37 @@ export default function LayoutShell(){
         </div>
       </header>
       <main className="flex-1">
-        <Outlet />
+        <div className="w-full grid grid-cols-12 gap-6 px-4 md:px-6 md:pl-0">
+          {/* Left Sidebar (desktop only) */}
+          {!user?.isAdmin && (
+            <aside className="hidden md:block col-span-2">
+              <LeftSidebar />
+            </aside>
+          )}
+          {/* Content */}
+          <section className={`${!user?.isAdmin ? 'col-span-12 md:col-span-10' : 'col-span-12'}`}>
+            {!user?.isAdmin ? (
+              <div className="max-w-3xl mx-auto w-full">
+                <Outlet />
+              </div>
+            ) : (
+              <Outlet />
+            )}
+          </section>
+        </div>
       </main>
 
-  <BottomBar />
+      {/* BottomBar only on mobile (and not for admin) */}
+      {!user?.isAdmin && (
+        <div className="md:hidden">
+          <BottomBar />
+        </div>
+      )}
+
+      {/* Floating chat button for all screens (non-admin) */}
+      {!user?.isAdmin && (
+        <FloatingChatButton />
+      )}
     </div>
   );
 }
