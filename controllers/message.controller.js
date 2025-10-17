@@ -25,6 +25,9 @@ export const listConversations = asyncHandler(async (req, res) => {
       }
       return p;
     }));
+    try {
+      obj.unreadCount = await Message.countDocuments({ conversation: c._id, to: userId, readAt: { $exists: false } });
+    } catch { obj.unreadCount = 0; }
     return obj;
   }));
 
