@@ -75,9 +75,22 @@ import { verifyS3Connection } from "./utils/s3.js";
 
 const app = express();
 const server = createServer(app);
+
+// Support multiple frontend origins (comma-separated) for LAN testing
+const allowedOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: [process.env.FRONTEND_URL],
+    origin: (origin, cb) => {
+      // Allow non-browser clients or same-origin (no Origin header)
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.length === 0) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error("Not allowed by Socket.IO CORS"));
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -85,7 +98,13 @@ const io = new Server(server, {
 
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL],
+    origin: (origin, cb) => {
+      // Allow same-origin/no Origin and any explicitly allowed origin
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.length === 0) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
