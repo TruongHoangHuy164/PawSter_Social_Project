@@ -27,7 +27,11 @@ export function SocketProvider({ children }) {
     }
 
     console.log('🚀 Creating new socket connection with token')
-    const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api').replace('/api', '')
+    // If VITE_API_URL is set, derive base from it; else use current origin (works with Vite proxy)
+    const baseFromEnv = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace(/\/$/, '').replace('/api', '')
+      : window.location.origin
+    const apiUrl = baseFromEnv
     console.log('🌐 Connecting to:', apiUrl)
     console.log('🔍 VITE_API_URL:', import.meta.env.VITE_API_URL)
     console.log('🔍 Final socket URL:', apiUrl)

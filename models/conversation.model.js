@@ -7,7 +7,7 @@ const conversationSchema = new mongoose.Schema({
   lastSender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
+// Keep a compound index to support queries by participants ordered by activity
 conversationSchema.index({ participants: 1, updatedAt: -1 });
-conversationSchema.index({ participants: 1 }, { unique: false });
 
 export const Conversation = mongoose.model('Conversation', conversationSchema);

@@ -1,4 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// Prefer same-origin '/api' via Vite proxy when VITE_API_URL not provided.
+// This allows accessing the app from any LAN IP without editing env.
+const BASE = import.meta.env.VITE_API_URL || '/api';
 
 async function request(path, method='GET', body, token) {
   const isFormData = (typeof FormData !== 'undefined') && body instanceof FormData;

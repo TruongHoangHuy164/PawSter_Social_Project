@@ -77,18 +77,41 @@ const app = express();
 const server = createServer(app);
 
 // Support multiple frontend origins (comma-separated) for LAN testing
-const allowedOrigins = (process.env.FRONTEND_URL || "")
-  .split(",")
-  .map((s) => s.trim())
+// Build from FRONTEND_URL and WEB_URL, normalize, and add common dev defaults
+const normalizeOrigin = (o) => (typeof o === "string" ? o.replace(/\/$/, "") : o);
+const envOrigins = [process.env.FRONTEND_URL, process.env.WEB_URL]
+  .filter(Boolean)
+  .flatMap((s) => String(s).split(","))
+  .map((s) => normalizeOrigin(s.trim()))
   .filter(Boolean);
+
+const devDefaults = [
+  "http://localhost:5022",
+  "http://127.0.0.1:5022",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
+
+const allowedOrigins = new Set(
+  [
+    ...envOrigins,
+    ...(process.env.NODE_ENV !== "production" ? devDefaults : []),
+  ]
+    .filter(Boolean)
+    .map(normalizeOrigin)
+);
 
 const io = new Server(server, {
   cors: {
     origin: (origin, cb) => {
-      // Allow non-browser clients or same-origin (no Origin header)
       if (!origin) return cb(null, true);
-      if (allowedOrigins.length === 0) return cb(null, true);
-      if (allowedOrigins.includes(origin)) return cb(null, true);
+      if (envOrigins.includes("*")) return cb(null, true);
+      const norm = normalizeOrigin(origin);
+      if (allowedOrigins.size === 0) return cb(null, true);
+      if (allowedOrigins.has(norm)) return cb(null, true);
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(`Socket.IO CORS blocked Origin=${origin} (normalized=${norm}). Allowed: ${[...allowedOrigins].join(", ")}`);
+      }
       return cb(new Error("Not allowed by Socket.IO CORS"));
     },
     methods: ["GET", "POST"],
@@ -101,8 +124,13 @@ app.use(
     origin: (origin, cb) => {
       // Allow same-origin/no Origin and any explicitly allowed origin
       if (!origin) return cb(null, true);
-      if (allowedOrigins.length === 0) return cb(null, true);
-      if (allowedOrigins.includes(origin)) return cb(null, true);
+      if (envOrigins.includes("*")) return cb(null, true);
+      const norm = normalizeOrigin(origin);
+      if (allowedOrigins.size === 0) return cb(null, true);
+      if (allowedOrigins.has(norm)) return cb(null, true);
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(`Express CORS blocked Origin=${origin} (normalized=${norm}). Allowed: ${[...allowedOrigins].join(", ")}`);
+      }
       return cb(new Error("Not allowed by CORS"));
     },
     credentials: true,
@@ -267,8 +295,11 @@ io.on("connection", (socket) => {
 connectDB().then(async () => {
   // Fire and forget S3 verification (doesn't block server if it fails)
   verifyS3Connection().catch(() => {});
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Threads API is running on http://localhost:${PORT}`);
     console.log(`🔌 WebSocket server is running`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`🔐 CORS allowlist: ${[...allowedOrigins].join(", ") || "<empty> (allow all/no Origin)"}`);
+    }
   });
 });
