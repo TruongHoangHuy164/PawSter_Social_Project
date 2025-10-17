@@ -66,6 +66,7 @@ import commentRoutes from "./routes/comment.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import qrRoutes from "./routes/qr.routes.js";
 import mediaRoutes from "./routes/media.routes.js";
+import messageRoutes from "./routes/message.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import adminBootstrapRoutes from "./routes/adminBootstrap.routes.js";
 import swaggerUi from "swagger-ui-express";
@@ -119,6 +120,7 @@ app.use("/api/comments", commentRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/qr", qrRoutes);
 app.use("/api/media", mediaRoutes);
+app.use("/api/messages", messageRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin-bootstrap", adminBootstrapRoutes);
 
@@ -199,6 +201,11 @@ io.on("connection", (socket) => {
     `🔌 User connected: ${socket.id} (User: ${socket.user?.username})`
   );
 
+  // Join theo user để nhận notify
+  if (socket.user?._id) {
+    socket.join(`user_${socket.user._id}`);
+  }
+
   // Join thread room for real-time updates
   socket.on("join_thread", (threadId) => {
     socket.join(`thread_${threadId}`);
@@ -225,6 +232,16 @@ io.on("connection", (socket) => {
     console.log(
       `🔌 User disconnected: ${socket.id} (User: ${socket.user?.username})`
     );
+  });
+
+  // ====== Direct Message Rooms ======
+  socket.on('dm:join', (conversationId) => {
+    socket.join(`dm_${conversationId}`);
+    socket.emit('dm:joined', { conversationId });
+  });
+
+  socket.on('dm:leave', (conversationId) => {
+    socket.leave(`dm_${conversationId}`);
   });
 });
 

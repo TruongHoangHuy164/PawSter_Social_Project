@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import ProBadge from "./ProBadge.jsx"
+import AvatarWithPlus from "./AvatarWithPlus.jsx"
 import CommentSection from "./CommentSection.jsx"
 import CommentInput from "./CommentInput.jsx"
 import { api } from "../utils/api.js"
@@ -327,6 +328,7 @@ export default function ThreadItem({ thread, onDelete }) {
       {/* Header */}
       <div className="flex items-center gap-3 text-sm">
         <div className="flex items-center gap-2">
+          <AvatarWithPlus userId={thread.author?._id} avatarUrl={thread.author?.avatarUrl} size={36} />
           <span className="font-semibold text-base" style={{ color: "#000" }}>
             {thread.author?.username || "Unknown"}
           </span>

@@ -24,6 +24,27 @@ export const api = {
   rawPatch: (p, formData, t) => request(p, 'PATCH', formData, t)
 };
 
+// Messages API
+export const dmApi = {
+  listConversations: (token) => request('/messages/conversations', 'GET', undefined, token),
+  getOrCreate: (otherId, token) => request(`/messages/conversations/with/${otherId}`, 'POST', undefined, token),
+  listMessages: (conversationId, page=1, limit=30, token) => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    return request(`/messages/conversations/${conversationId}/messages?${params.toString()}`,'GET', undefined, token);
+  },
+  send: (conversationId, { to, content, files }, token) => {
+    if (files && files.length) {
+      const fd = new FormData();
+      if (to) fd.append('to', to);
+      if (content) fd.append('content', content);
+      files.forEach(f=>fd.append('media', f));
+      return request(`/messages/conversations/${conversationId}/messages`, 'POST', fd, token);
+    }
+    return request(`/messages/conversations/${conversationId}/messages`, 'POST', { to, content }, token);
+  },
+  markRead: (conversationId, token) => request(`/messages/conversations/${conversationId}/read`, 'POST', undefined, token)
+};
+
 // Comment API functions
 export const commentApi = {
   // Create a new comment

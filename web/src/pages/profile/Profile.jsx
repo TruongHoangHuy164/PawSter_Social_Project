@@ -72,7 +72,17 @@ export default function Profile(){
         setRemoteAvatar(d.avatarUrl || null);
         setRemoteCover(d.coverUrl || null);
         // update auth user base fields (username maybe changed elsewhere)
-        setUser(u => ({ ...(u||{}), username: d.username, avatarKey: d.avatarKey, coverKey: d.coverKey, bio: d.bio, website: d.website }));
+        setUser(u => ({
+          ...(u||{}),
+          username: d.username,
+          avatarKey: d.avatarKey,
+          coverKey: d.coverKey,
+          bio: d.bio,
+          website: d.website,
+          // Keep auth header avatar in sync with Profile signed URL
+          avatarUrl: d.avatarUrl || (u && u.avatarUrl) || null,
+          coverUrl: d.coverUrl || (u && u.coverUrl) || null,
+        }));
       } catch(e){ console.error('Profile fetch failed', e); }
     })();
   }, [token, setUser]);
@@ -92,7 +102,17 @@ export default function Profile(){
       const d = res.data.data;
       setRemoteAvatar(d.avatarUrl || null);
       setRemoteCover(d.coverUrl || null);
-      setUser(u => ({ ...(u||{}), username: d.username, avatarKey: d.avatarKey, coverKey: d.coverKey, bio: d.bio, website: d.website }));
+      setUser(u => ({
+        ...(u||{}),
+        username: d.username,
+        avatarKey: d.avatarKey,
+        coverKey: d.coverKey,
+        bio: d.bio,
+        website: d.website,
+        // Update signed URLs so header avatar updates instantly
+        avatarUrl: d.avatarUrl || (u && u.avatarUrl) || null,
+        coverUrl: d.coverUrl || (u && u.coverUrl) || null,
+      }));
       setMsg('Đã lưu');
     } catch(e){ setMsg(e.message); } finally { setSaving(false); }
   };

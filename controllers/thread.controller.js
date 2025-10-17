@@ -1,6 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import { Thread } from '../models/thread.model.js';
-import { uploadBuffer, deleteMediaKeys } from '../utils/s3.js';
+import { uploadBuffer, deleteMediaKeys, getSignedMediaUrl } from '../utils/s3.js';
 import crypto from 'crypto';
 
 function detectType(mime) {
@@ -93,8 +93,13 @@ export const createThread = asyncHandler(async (req, res) => {
 
   try {
     const tags = extractTags(content);
-    const thread = await Thread.create({ author: req.user._id, content, media: uploaded, parent: null, tags });
+    let thread = await Thread.create({ author: req.user._id, content, media: uploaded, parent: null, tags });
+    // populate author to include avatarKey for signing url
+    thread = await thread.populate('author', 'username isPro badges avatarKey');
     const sanitized = thread.toObject();
+    if (sanitized.author?.avatarKey) {
+      try { sanitized.author.avatarUrl = await getSignedMediaUrl(sanitized.author.avatarKey, 900); } catch { sanitized.author.avatarUrl = null; }
+    }
     if (sanitized.media) {
       sanitized.media = sanitized.media.map(({ key, type, mimeType, size, _id }) => ({ _id, key, type, mimeType, size }));
     }
@@ -110,8 +115,20 @@ export const createThread = asyncHandler(async (req, res) => {
 });
 
 export const listThreads = asyncHandler(async (req, res) => {
-  const threads = await Thread.find().sort({ createdAt: -1 }).limit(200).populate('author', 'username isPro badges');
-  res.json({ success: true, data: threads });
+  const threads = await Thread.find()
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .populate('author', 'username isPro badges avatarKey');
+
+  const withAvatars = await Promise.all(threads.map(async (t) => {
+    const obj = t.toObject();
+    if (obj.author?.avatarKey) {
+      try { obj.author.avatarUrl = await getSignedMediaUrl(obj.author.avatarKey, 900); } catch { obj.author.avatarUrl = null; }
+    }
+    return obj;
+  }));
+
+  res.json({ success: true, data: withAvatars });
 });
 
 export const deleteThread = asyncHandler(async (req, res) => {
@@ -127,15 +144,30 @@ export const deleteThread = asyncHandler(async (req, res) => {
 });
 
 export const getThread = asyncHandler(async (req, res) => {
-  const t = await Thread.findById(req.params.id).populate('author', 'username isPro badges');
+  const t = await Thread.findById(req.params.id).populate('author', 'username isPro badges avatarKey');
   if (!t) return res.status(404).json({ success: false, message: 'Not found' });
-  res.json({ success: true, data: t });
+  const obj = t.toObject();
+  if (obj.author?.avatarKey) {
+    try { obj.author.avatarUrl = await getSignedMediaUrl(obj.author.avatarKey, 900); } catch { obj.author.avatarUrl = null; }
+  }
+  res.json({ success: true, data: obj });
 });
 
 export const listReplies = asyncHandler(async (req, res) => {
   const parentId = req.params.id;
-  const replies = await Thread.find({ parent: parentId }).sort({ createdAt: 1 }).populate('author', 'username isPro badges');
-  res.json({ success: true, data: replies });
+  const replies = await Thread.find({ parent: parentId })
+    .sort({ createdAt: 1 })
+    .populate('author', 'username isPro badges avatarKey');
+
+  const withAvatars = await Promise.all(replies.map(async (r) => {
+    const o = r.toObject();
+    if (o.author?.avatarKey) {
+      try { o.author.avatarUrl = await getSignedMediaUrl(o.author.avatarKey, 900); } catch { o.author.avatarUrl = null; }
+    }
+    return o;
+  }));
+
+  res.json({ success: true, data: withAvatars });
 });
 
 export const createReply = asyncHandler(async (req, res) => {
@@ -177,8 +209,13 @@ export const createReply = asyncHandler(async (req, res) => {
   }
   try {
     const tags = extractTags(content);
-    const reply = await Thread.create({ author: req.user._id, content, media: uploaded, parent: parentId, tags });
-    res.status(201).json({ success: true, data: reply });
+    let reply = await Thread.create({ author: req.user._id, content, media: uploaded, parent: parentId, tags });
+    reply = await reply.populate('author', 'username isPro badges avatarKey');
+    const obj = reply.toObject();
+    if (obj.author?.avatarKey) {
+      try { obj.author.avatarUrl = await getSignedMediaUrl(obj.author.avatarKey, 900); } catch { obj.author.avatarUrl = null; }
+    }
+    res.status(201).json({ success: true, data: obj });
   } catch(e){
     if (uploaded.length) deleteMediaKeys(uploaded.map(u=>u.key)).catch(()=>{});
     return res.status(400).json({ success: false, message: e.message || 'Invalid reply' });
@@ -202,6 +239,18 @@ export const updateThread = asyncHandler(async (req, res) => {
 export const listByTag = asyncHandler(async (req, res) => {
   const tag = String(req.params.tag || '').toLowerCase();
   if (!tag) return res.status(400).json({ success: false, message: 'Tag required' });
-  const items = await Thread.find({ parent: null, tags: tag }).sort({ createdAt: -1 }).limit(200).populate('author', 'username isPro badges');
-  res.json({ success: true, data: items });
+  const items = await Thread.find({ parent: null, tags: tag })
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .populate('author', 'username isPro badges avatarKey');
+
+  const withAvatars = await Promise.all(items.map(async (t) => {
+    const obj = t.toObject();
+    if (obj.author?.avatarKey) {
+      try { obj.author.avatarUrl = await getSignedMediaUrl(obj.author.avatarKey, 900); } catch { obj.author.avatarUrl = null; }
+    }
+    return obj;
+  }));
+
+  res.json({ success: true, data: withAvatars });
 });
