@@ -17,11 +17,11 @@ export default function Payments(){
       <table className="min-w-full text-sm">
         <thead>
           <tr className="text-left">
-            <th className="p-2">Người dùng</th>
-            <th className="p-2">Provider</th>
-            <th className="p-2">Số tiền</th>
-            <th className="p-2">Trạng thái</th>
-            <th className="p-2">Thời gian</th>
+            <th className="p-2 text-black font-semibold">Người dùng</th>
+            <th className="p-2 text-black font-semibold">Provider</th>
+            <th className="p-2 text-black font-semibold">Số tiền</th>
+            <th className="p-2 text-black font-semibold">Trạng thái</th>
+            <th className="p-2 text-black font-semibold">Thời gian</th>
           </tr>
         </thead>
         <tbody>

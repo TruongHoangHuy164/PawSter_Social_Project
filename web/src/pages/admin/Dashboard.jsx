@@ -15,9 +15,9 @@ export default function Dashboard(){
   if (!stats) return <div className="card p-4">Đang tải...</div>;
   return (
     <div className="grid grid-cols-3 gap-4">
-      <div className="card p-4"><div className="text-sm text-muted">Người dùng</div><div className="text-3xl font-bold">{stats.users}</div></div>
-      <div className="card p-4"><div className="text-sm text-muted">Bài viết</div><div className="text-3xl font-bold">{stats.threads}</div></div>
-      <div className="card p-4"><div className="text-sm text-muted">Thanh toán (paid/pending)</div><div className="text-3xl font-bold">{stats.payments.paid}/{stats.payments.pending}</div></div>
+      <div className="card p-4"><div className="text-sm text-black font-semibold">Người dùng</div><div className="text-3xl font-extrabold">{stats.users}</div></div>
+      <div className="card p-4"><div className="text-sm text-black font-semibold">Bài viết</div><div className="text-3xl font-extrabold">{stats.threads}</div></div>
+      <div className="card p-4"><div className="text-sm text-black font-semibold">Thanh toán (paid/pending)</div><div className="text-3xl font-extrabold">{stats.payments.paid}/{stats.payments.pending}</div></div>
     </div>
   );
 }

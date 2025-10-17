@@ -36,7 +36,7 @@ export default function Users(){
               <td className="p-2"><input type="checkbox" checked={!!u.isAdmin} onChange={e=>update(u._id, { isAdmin: e.target.checked })} /></td>
               <td className="p-2">{(u.badges||[]).join(', ')}</td>
               <td className="p-2 space-x-2">
-                <button className="px-2 py-1 text-xs rounded bg-black/10 dark:bg-white/10" onClick={()=>{
+                <button className="px-2 py-1 text-xs rounded" style={{background:'var(--panel-border)'}} onClick={()=>{
                   const val = prompt('Nhập badges, phân tách bởi dấu phẩy', (u.badges||[]).join(','));
                   if (val!=null) update(u._id, { badges: val.split(',').map(s=>s.trim()).filter(Boolean) });
                 }}>Sửa badges</button>
