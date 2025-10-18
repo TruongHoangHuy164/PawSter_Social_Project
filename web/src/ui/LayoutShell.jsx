@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../state/auth.jsx';
 import ProBadge from './ProBadge.jsx';
+import Avatar from './Avatar.jsx';
 import BottomBar from './BottomBar.jsx';
 import LeftSidebar from './LeftSidebar.jsx';
 import FloatingChatButton from './FloatingChatButton.jsx';
@@ -46,14 +47,16 @@ export default function LayoutShell(){
             <button aria-label="Chuyển nền sáng/tối" title="Toggle theme" onClick={()=>setTheme(t=>t==='light'?'dark':'light')} className="px-2 py-1 rounded-md border border-transparent hover:border-black/6 dark:hover:border-white/10 transition pop bg-transparent">
               {theme==='light' ? '🌙' : '🌞'}
             </button>
-            {user && <div className="flex items-center gap-2 text-sm" style={{color:'var(--text)'}}>
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-neutral-800 dark:to-neutral-700 flex items-center justify-center text-sm text-muted">{user.username?.[0]||'U'}</div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">{user.username}</span>
-                <span className="text-xs muted">@{user.username}</span>
+            {user && (
+              <div className="flex items-center gap-2 text-sm" style={{color:'var(--text)'}}>
+                <Avatar user={{ username: user?.username, avatarUrl: user?.avatarUrl || user?.avatar || user?.profile?.avatarUrl }} size="sm" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{user.username}</span>
+                  <span className="text-xs muted">@{user.username}</span>
+                </div>
+                {user.isPro && <ProBadge />}
               </div>
-              {user.isPro && <ProBadge />}
-            </div>}
+            )}
             {user && <button onClick={()=>{logout(); navigate('/login');}} className="text-xs px-3 py-1 rounded bg-transparent border" style={{borderColor:'var(--panel-border)'}}>Logout</button>}
             {!user && <button onClick={()=>navigate('/login')} className="text-xs px-3 py-1 rounded bg-violet-600 hover:bg-violet-500 text-white">Login</button>}
           </div>

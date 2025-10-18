@@ -228,8 +228,26 @@ export const sendFriendRequest = asyncHandler(async (req, res) => {
     return res.json({ success: true, message: "Friend request re-sent" });
   }
 
-  await FriendRequest.create({ from: req.user._id, to: targetUserId });
-  res.status(201).json({ success: true, message: "Friend request sent" });
+  try {
+    // Use an atomic upsert to avoid duplicate-key race conditions
+    await FriendRequest.updateOne(
+      { from: req.user._id, to: targetUserId },
+      {
+        $set: { status: "pending" },
+        $setOnInsert: { from: req.user._id, to: targetUserId },
+      },
+      { upsert: true }
+    );
+    res.status(201).json({ success: true, message: "Friend request sent" });
+  } catch (err) {
+    // If another request created the same document concurrently, return a friendly message
+    if (err && err.code === 11000) {
+      return res
+        .status(200)
+        .json({ success: true, message: "Friend request already sent" });
+    }
+    throw err;
+  }
 });
 
 // Get received friend requests

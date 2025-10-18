@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../state/auth";
 import { api } from "../../utils/api";
 import Avatar from "../../ui/Avatar";
-
+// add friend
 export default function FriendRequests() {
   const { user, token } = useAuth();
   const [receivedRequests, setReceivedRequests] = useState([]);

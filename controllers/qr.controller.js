@@ -65,6 +65,22 @@ export const scanQR = asyncHandler(async (req, res) => {
     await existing.save();
     return res.json({ success: true, message: "Request re-sent" });
   }
-  await FriendRequest.create({ from: req.user._id, to: target._id });
-  res.status(201).json({ success: true, message: "Friend request sent" });
+  try {
+    await FriendRequest.updateOne(
+      { from: req.user._id, to: target._id },
+      {
+        $set: { status: "pending" },
+        $setOnInsert: { from: req.user._id, to: target._id },
+      },
+      { upsert: true }
+    );
+    res.status(201).json({ success: true, message: "Friend request sent" });
+  } catch (err) {
+    if (err && err.code === 11000) {
+      return res
+        .status(200)
+        .json({ success: true, message: "Request already pending" });
+    }
+    throw err;
+  }
 });
