@@ -102,6 +102,9 @@ export default function Profile() {
           coverKey: d.coverKey,
           bio: d.bio,
           website: d.website,
+          friends: d.friends,
+          friendLimit: d.friendLimit,
+          isPro: d.isPro,
           // Keep auth header avatar in sync with Profile signed URL
           avatarUrl: d.avatarUrl || (u && u.avatarUrl) || null,
           coverUrl: d.coverUrl || (u && u.coverUrl) || null,

@@ -24,7 +24,11 @@ const userSchema = new mongoose.Schema(
     likedThreads: [{ type: mongoose.Schema.Types.ObjectId, ref: "Thread" }],
     repostedThreads: [{ type: mongoose.Schema.Types.ObjectId, ref: "Thread" }],
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
 
 userSchema.pre("save", async function (next) {
@@ -39,7 +43,7 @@ userSchema.methods.comparePassword = function (candidate) {
 };
 
 userSchema.virtual("friendLimit").get(function () {
-  return this.isPro ? 30 : 20;
+  return this.isPro ? 200 : 20;
 });
 
 export const User = mongoose.model("User", userSchema);

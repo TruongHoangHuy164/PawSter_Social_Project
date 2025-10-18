@@ -48,6 +48,7 @@ export const getProfile = asyncHandler(async (req, res) => {
       email: user.email,
       isPro: user.isPro,
       friends: user.friends,
+      friendLimit: user.friendLimit,
       badges: user.badges,
       avatarKey: user.avatarKey,
       coverKey: user.coverKey,
