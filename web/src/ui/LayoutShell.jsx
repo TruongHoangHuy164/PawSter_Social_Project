@@ -62,7 +62,24 @@ export default function LayoutShell(){
                   <span className="text-sm font-medium">{user.username}</span>
                   <span className="text-xs muted">@{user.username}</span>
                 </div>
-                {user.isPro && <ProBadge />}
+                {user.isPro && (
+                  <div className="flex items-center gap-2">
+                    <ProBadge />
+                    {user?.proExpiry && (
+                      <span
+                        className="text-[11px] px-2 py-0.5 rounded-full"
+                        title={(() => { try { return new Date(user.proExpiry).toLocaleString('vi-VN'); } catch { return ''; } })()}
+                        style={{
+                          background: 'rgba(124,58,237,0.08)',
+                          border: '1px solid rgba(124,58,237,0.2)',
+                          color: '#6b4a57'
+                        }}
+                      >
+                        Hết hạn: {(() => { try { return new Date(user.proExpiry).toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' }); } catch { return ''; } })()}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             {user && <button onClick={()=>{logout(); navigate('/login');}} className="text-xs px-3 py-1 rounded bg-transparent border" style={{borderColor:'var(--panel-border)'}}>Logout</button>}
