@@ -72,6 +72,7 @@ import adminBootstrapRoutes from "./routes/adminBootstrap.routes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
 import { verifyS3Connection } from "./utils/s3.js";
+import { verifyEmailTransport } from "./utils/email.js";
 // Optional AI helper (OpenRouter). To use, set OPENROUTER_API_KEY in your env and import { ask, chat } from "./utils/ai.js" where needed.
 
 const app = express();
@@ -296,6 +297,10 @@ io.on("connection", (socket) => {
 connectDB().then(async () => {
   // Fire and forget S3 verification (doesn't block server if it fails)
   verifyS3Connection().catch(() => {});
+  // Fire and forget SMTP verification to help diagnose email issues in dev
+  verifyEmailTransport()
+    .then(() => console.log("📧 SMTP verified successfully"))
+    .catch((e) => console.warn("📧 SMTP verification failed:", e?.message || e));
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Threads API is running on http://localhost:${PORT}`);
     console.log(`🔌 WebSocket server is running`);

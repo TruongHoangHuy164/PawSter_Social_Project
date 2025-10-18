@@ -18,32 +18,37 @@ const toBool = (v, d = false) => {
   return d;
 };
 
-const SMTP_HOST = process.env.SMTP_HOST || "smtp.gmail.com";
-const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
-const SMTP_SECURE = toBool(process.env.SMTP_SECURE, false);
-const SMTP_REQUIRE_TLS = toBool(process.env.SMTP_REQUIRE_TLS, true);
-const SMTP_CONNECTION_TIMEOUT = Number(process.env.SMTP_CONNECTION_TIMEOUT || 5000);
-const SMTP_GREETING_TIMEOUT = Number(process.env.SMTP_GREETING_TIMEOUT || 5000);
-const SMTP_SOCKET_TIMEOUT = Number(process.env.SMTP_SOCKET_TIMEOUT || 5000);
+function loadSmtpConfig() {
+  return {
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: Number(process.env.SMTP_PORT || 587),
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    secure: toBool(process.env.SMTP_SECURE, false),
+    requireTLS: toBool(process.env.SMTP_REQUIRE_TLS, true),
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 5000),
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 5000),
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || 5000),
+  };
+}
 
 let transporter;
 
 function buildTransporter() {
   if (transporter) return transporter;
-  if (!SMTP_USER || !SMTP_PASS) {
+  const cfg = loadSmtpConfig();
+  if (!cfg.user || !cfg.pass) {
     throw new Error("SMTP credentials missing. Set SMTP_USER and SMTP_PASS in your environment.");
   }
   transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: SMTP_SECURE, // false for 587 (STARTTLS), true for 465
-    requireTLS: SMTP_REQUIRE_TLS,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-    connectionTimeout: SMTP_CONNECTION_TIMEOUT,
-    greetingTimeout: SMTP_GREETING_TIMEOUT,
-    socketTimeout: SMTP_SOCKET_TIMEOUT,
+    host: cfg.host,
+    port: cfg.port,
+    secure: cfg.secure, // false for 587 (STARTTLS), true for 465
+    requireTLS: cfg.requireTLS,
+    auth: { user: cfg.user, pass: cfg.pass },
+    connectionTimeout: cfg.connectionTimeout,
+    greetingTimeout: cfg.greetingTimeout,
+    socketTimeout: cfg.socketTimeout,
   });
   return transporter;
 }
@@ -64,7 +69,8 @@ export async function verifyEmailTransport() {
  */
 export async function sendEmail({ to, subject, text, html, from }) {
   const t = buildTransporter();
-  const defaultFrom = `${process.env.APP_NAME || "PawSter"} <${SMTP_USER}>`;
+  const { user } = loadSmtpConfig();
+  const defaultFrom = `${process.env.APP_NAME || "PawSter"} <${user}>`;
   const info = await t.sendMail({
     from: from || defaultFrom,
     to,
