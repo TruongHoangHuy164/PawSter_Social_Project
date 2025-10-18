@@ -72,6 +72,7 @@ import adminBootstrapRoutes from "./routes/adminBootstrap.routes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
 import { verifyS3Connection } from "./utils/s3.js";
+// Optional AI helper (OpenRouter). To use, set OPENROUTER_API_KEY in your env and import { ask, chat } from "./utils/ai.js" where needed.
 
 const app = express();
 const server = createServer(app);
