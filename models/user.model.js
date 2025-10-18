@@ -21,6 +21,8 @@ const userSchema = new mongoose.Schema(
     coverKey: { type: String },
     bio: { type: String, maxlength: 300 },
     website: { type: String },
+    likedThreads: [{ type: mongoose.Schema.Types.ObjectId, ref: "Thread" }],
+    repostedThreads: [{ type: mongoose.Schema.Types.ObjectId, ref: "Thread" }],
   },
   { timestamps: true }
 );
