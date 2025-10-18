@@ -58,6 +58,42 @@ export const listThreads = async (req, res) => {
   } catch (e) { return res.status(500).json({ success: false, message: e.message }); }
 };
 
+// Get thread detail by ID
+export const getThreadDetail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const thread = await Thread.findById(id)
+      .populate('author', 'username email isAdmin isPro createdAt');
+    
+    if (!thread) {
+      return res.status(404).json({ success: false, message: 'Thread not found' });
+    }
+
+    const daysDiff = Math.floor((Date.now() - new Date(thread.createdAt)) / (1000 * 60 * 60 * 24));
+    const createdAgo = daysDiff === 0 ? 'Today' : 
+                      daysDiff === 1 ? '1 day ago' : 
+                      daysDiff < 30 ? `${daysDiff} days ago` : 
+                      `${Math.floor(daysDiff / 30)} months ago`;
+
+    return res.json({ 
+      success: true, 
+      data: {
+        ...thread.toObject(),
+        stats: {
+          contentLength: thread.content?.length || 0,
+          mediaCount: thread.media?.length || 0,
+          hasMedia: (thread.media?.length || 0) > 0,
+          createdAgo,
+          accountAge: Math.floor((Date.now() - new Date(thread.author.createdAt)) / (1000 * 60 * 60 * 24)) + ' days'
+        }
+      }
+    });
+  } catch (e) { 
+    console.error('getThreadDetail error:', e);
+    return res.status(500).json({ success: false, message: e.message }); 
+  }
+};
+
 export const deleteThread = async (req, res) => {
   try {
     const { id } = req.params;

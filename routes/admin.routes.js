@@ -11,6 +11,7 @@ router.get('/stats', adminCtrl.stats);
 router.get('/users', adminCtrl.listUsers);
 router.patch('/users/:id', adminCtrl.updateUser);
 router.get('/threads', adminCtrl.listThreads);
+router.get('/threads/:id', adminCtrl.getThreadDetail);
 router.delete('/threads/:id', adminCtrl.deleteThread);
 router.post('/friend/accept', adminCtrl.atomicAccept);
 router.post('/pro/enforce', adminCtrl.enforceProExpiry);
