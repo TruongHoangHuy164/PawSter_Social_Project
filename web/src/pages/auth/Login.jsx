@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../../utils/api.js';
 import { useAuth } from '../../state/auth.jsx';
 import { Link, useNavigate } from 'react-router-dom';
@@ -9,6 +9,56 @@ export default function Login(){
   const [form, setForm] = useState({ email:'', password:'' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const googleBtnRef = useRef(null);
+
+  // Initialize Google Identity Services
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1040653556867-hnjvrtkm0ts74fihu4h75irp839578tq.apps.googleusercontent.com';
+    if (!clientId) return; // don't init if not configured
+
+    const init = () => {
+      if (window.google?.accounts?.id && googleBtnRef.current) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (resp) => {
+            const idToken = resp?.credential;
+            if (!idToken) return;
+            try {
+              const res = await api.post('/auth/google', { idToken });
+              const { token, user } = res.data.data || {};
+              login(token);
+              const isAdmin = !!(user && user.isAdmin);
+              nav(isAdmin ? '/admin' : '/');
+            } catch (e) {
+              setError(e.message || 'Đăng nhập Google thất bại');
+            }
+          },
+        });
+        window.google.accounts.id.renderButton(googleBtnRef.current, {
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          width: 320,
+        });
+      }
+    };
+
+    // inject script if not present
+    const id = 'google-identity-script';
+    const existing = document.getElementById(id);
+    if (!existing) {
+      const s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true;
+      s.defer = true;
+      s.id = id;
+      s.onload = init;
+      document.head.appendChild(s);
+    } else {
+      init();
+    }
+
+  }, [login, nav]);
 
   const submit = async (e)=>{
     e.preventDefault(); setError(''); setLoading(true);
@@ -46,6 +96,11 @@ export default function Login(){
           <button disabled={loading} className="w-full py-2 rounded-md bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-md hover:scale-[1.01] transform-gpu transition">{loading? 'Đang xử lý...' : 'Đăng nhập'}</button>
           <p className="text-xs text-center text-neutral-400">Chưa có tài khoản? <Link to="/register" className="text-violet-400 hover:underline">Đăng ký</Link></p>
         </form>
+        <div className="relative my-4">
+          <div className="h-px bg-black/10 dark:bg-white/10" />
+          <div className="absolute left-1/2 -translate-x-1/2 -top-3 px-3 text-xs bg-[color:var(--panel)]">Hoặc</div>
+        </div>
+        <div ref={googleBtnRef} className="flex justify-center" />
       </div>
     </div>
   );

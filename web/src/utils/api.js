@@ -31,6 +31,11 @@ export const api = {
   rawPatch: (p, formData, t) => request(p, "PATCH", formData, t),
 };
 
+export const authApi = {
+  requestPasswordOtp: (token) => request('/auth/password/otp', 'POST', undefined, token),
+  changePasswordWithOtp: ({ otp, newPassword }, token) => request('/auth/password/change', 'POST', { otp, newPassword }, token),
+};
+
 // Messages API
 export const dmApi = {
   listConversations: (token) =>

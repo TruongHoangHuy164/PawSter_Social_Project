@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema(
     website: { type: String },
     likedThreads: [{ type: mongoose.Schema.Types.ObjectId, ref: "Thread" }],
     repostedThreads: [{ type: mongoose.Schema.Types.ObjectId, ref: "Thread" }],
+  googleId: { type: String, index: true, sparse: true },
+    // OTP password reset for authenticated change
+    resetOtpHash: { type: String },
+    resetOtpExpires: { type: Date },
   },
   {
     timestamps: true,

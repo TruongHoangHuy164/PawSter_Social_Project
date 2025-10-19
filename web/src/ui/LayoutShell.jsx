@@ -6,6 +6,7 @@ import Avatar from './Avatar.jsx';
 import BottomBar from './BottomBar.jsx';
 import LeftSidebar from './LeftSidebar.jsx';
 import FloatingChatButton from './FloatingChatButton.jsx';
+import ChangePasswordModal from '../pages/ChangePasswordModal.jsx';
 
 const NavItem = ({ to, children }) => <NavLink to={to} className={({isActive})=>`px-3 py-2 rounded-full text-sm font-medium hover:shadow-sm ${isActive?`bg-[color:var(--panel)] text-[color:var(--accent)]`:'text-muted'}`}>{children}</NavLink>;
 
@@ -14,6 +15,8 @@ export default function LayoutShell(){
   const navigate = useNavigate();
   // Start in light theme by default to avoid previously saved dark state
   const [theme, setTheme] = useState('light');
+  const [openPwd, setOpenPwd] = useState(false);
+  const [openMenu, setOpenMenu] = useState(false);
 
   useEffect(()=>{
     const root = document.documentElement;
@@ -56,18 +59,40 @@ export default function LayoutShell(){
               {theme==='light' ? '🌙' : '🌞'}
             </button>
             {user && (
-              <div className="flex items-center gap-2 text-sm" style={{color:'var(--text)'}}>
+              <div className="relative flex items-center gap-2 text-sm" style={{color:'var(--text)'}}>
                 <Avatar user={{ username: user?.username, avatarUrl: user?.avatarUrl || user?.avatar || user?.profile?.avatarUrl }} size="sm" />
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{user.username}</span>
                   <span className="text-xs muted">@{user.username}</span>
                 </div>
-                {user.isPro && <ProBadge />}
+                {user.isPro && (
+                  <div className="flex items-center gap-2">
+                    <ProBadge />
+                    {user?.proExpiry && (
+                      <span
+                        className="text-[11px] px-2 py-0.5 rounded-full"
+                        title={(() => { try { return new Date(user.proExpiry).toLocaleString('vi-VN'); } catch { return ''; } })()}
+                        style={{
+                          background: 'rgba(124,58,237,0.08)',
+                          border: '1px solid rgba(124,58,237,0.2)',
+                          color: '#6b4a57'
+                        }}
+                      >
+                        Hết hạn: {(() => { try { return new Date(user.proExpiry).toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' }); } catch { return ''; } })()}
+                      </span>
+                    )}
+                  </div>
+                )}
+                <button onClick={()=>setOpenMenu(v=>!v)} className="px-2 py-1 text-xs border rounded">▼</button>
+                {openMenu && (
+                  <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg p-2 text-sm bg-white dark:bg-[#111318] border" style={{borderColor:'var(--panel-border)'}}>
+                    <button onClick={()=>{ setOpenPwd(true); setOpenMenu(false); }} className="w-full text-left px-3 py-2 rounded hover:bg-black/5 dark:hover:bg-white/5">Đổi mật khẩu</button>
+                    <button onClick={()=>{ logout(); navigate('/login'); }} className="w-full text-left px-3 py-2 rounded hover:bg-black/5 dark:hover:bg-white/5">Đăng xuất</button>
+                  </div>
+                )}
               </div>
             )}
-            {user && <button onClick={()=>{logout(); navigate('/login');}} className="text-xs px-3 py-1 rounded bg-transparent border" style={{borderColor:'var(--panel-border)'}}>Logout</button>}
-            {!user && <button onClick={()=>navigate('/login')} className="text-xs px-3 py-1 rounded bg-violet-600 hover:bg-violet-500 text-white">Login</button>}
-          </div>
+            </div>
         </div>
       </header>
       <main className="flex-1">
@@ -102,6 +127,7 @@ export default function LayoutShell(){
       {!user?.isAdmin && (
         <FloatingChatButton />
       )}
+      <ChangePasswordModal open={openPwd} onClose={()=>setOpenPwd(false)} />
     </div>
   );
 }
