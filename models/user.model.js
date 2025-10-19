@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema(
     },
     password: { type: String, required: true },
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     isPro: { type: Boolean, default: false },
     proExpiry: { type: Date },
     badges: [{ type: String }],

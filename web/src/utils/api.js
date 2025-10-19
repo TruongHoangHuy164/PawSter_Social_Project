@@ -183,3 +183,21 @@ export const threadApi = {
     return request(`/threads/reposts/${userId}`, "GET", undefined, token);
   },
 };
+
+// User API functions
+export const userApi = {
+  // Get user by ID (public profile)
+  getUserById: (userId, token) => {
+    return request(`/users/${userId}`, "GET", undefined, token);
+  },
+
+  // Follow a user
+  followUser: (userId, token) => {
+    return request(`/users/${userId}/follow`, "POST", undefined, token);
+  },
+
+  // Unfollow a user
+  unfollowUser: (userId, token) => {
+    return request(`/users/${userId}/follow`, "DELETE", undefined, token);
+  },
+};

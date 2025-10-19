@@ -18,6 +18,10 @@ export const getMe = asyncHandler(async (req, res) => {
       email: u.email,
       isPro: u.isPro,
       isAdmin: u.isAdmin,
+      friends: u.friends,
+      followers: u.followers,
+      following: u.following,
+      friendLimit: u.friendLimit,
     },
   });
 });
@@ -48,6 +52,8 @@ export const getProfile = asyncHandler(async (req, res) => {
       email: user.email,
       isPro: user.isPro,
       friends: user.friends,
+      followers: user.followers,
+      following: user.following,
       friendLimit: user.friendLimit,
       badges: user.badges,
       avatarKey: user.avatarKey,
@@ -498,4 +504,99 @@ export const removeFriend = asyncHandler(async (req, res) => {
   await Promise.all([currentUser.save(), friendUser.save()]);
 
   res.json({ success: true, message: "Friend removed successfully" });
+});
+
+// Get user by ID (public profile)
+export const getUserById = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+
+  const user = await User.findById(userId).select("-password");
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  let avatarUrl = null,
+    coverUrl = null;
+  if (user.avatarKey) avatarUrl = await getSignedMediaUrl(user.avatarKey, 900);
+  if (user.coverKey) coverUrl = await getSignedMediaUrl(user.coverKey, 900);
+
+  res.json({
+    success: true,
+    data: {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      isPro: user.isPro,
+      friends: user.friends,
+      followers: user.followers,
+      following: user.following,
+      badges: user.badges,
+      avatarKey: user.avatarKey,
+      coverKey: user.coverKey,
+      avatarUrl,
+      coverUrl,
+      bio: user.bio || "",
+      website: user.website || "",
+      friendLimit: user.friendLimit,
+      createdAt: user.createdAt,
+    },
+  });
+});
+
+// Follow user
+export const followUser = asyncHandler(async (req, res) => {
+  const targetId = req.params.id;
+
+  if (targetId === String(req.user._id)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Cannot follow yourself" });
+  }
+
+  const target = await User.findById(targetId);
+  if (!target) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  const currentUser = await User.findById(req.user._id);
+
+  // Check if already following
+  if (currentUser.following.includes(targetId)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Already following" });
+  }
+
+  // Add to following list of current user atomically
+  await User.updateOne(
+    { _id: req.user._id },
+    { $addToSet: { following: targetId } }
+  );
+
+  // Add to followers list of target user atomically
+  await User.updateOne(
+    { _id: targetId },
+    { $addToSet: { followers: req.user._id } }
+  );
+
+  res.json({ success: true, message: "Followed successfully" });
+});
+
+// Unfollow user
+export const unfollowUser = asyncHandler(async (req, res) => {
+  const targetId = req.params.id;
+
+  // Remove from following list of current user atomically
+  await User.updateOne(
+    { _id: req.user._id },
+    { $pull: { following: targetId } }
+  );
+
+  // Remove from followers list of target user atomically
+  await User.updateOne(
+    { _id: targetId },
+    { $pull: { followers: req.user._id } }
+  );
+
+  res.json({ success: true, message: "Unfollowed successfully" });
 });

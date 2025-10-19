@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import ProBadge from "./ProBadge.jsx";
 import AvatarWithPlus from "./AvatarWithPlus.jsx";
 import CommentSection from "./CommentSection.jsx";
 import CommentInput from "./CommentInput.jsx";
-import { api, threadApi } from "../utils/api.js";
+import { api, threadApi, userApi } from "../utils/api.js";
 import { useAuth } from "../state/auth.jsx";
 
 export default function ThreadItem({ thread, onDelete }) {
   const { user, token } = useAuth();
+  const navigate = useNavigate();
   const mine = user && thread.author && thread.author._id === user._id;
   const [signed, setSigned] = useState({});
   const [loadingIdx, setLoadingIdx] = useState({});
@@ -30,6 +32,7 @@ export default function ThreadItem({ thread, onDelete }) {
   const [likesCount, setLikesCount] = useState(0);
   const [reposted, setReposted] = useState(false);
   const [repostsCount, setRepostsCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   // Initialize likes and reposts from thread data
   useEffect(() => {
@@ -41,7 +44,11 @@ export default function ThreadItem({ thread, onDelete }) {
       setReposted(thread.reposts.includes(user._id));
       setRepostsCount(thread.reposts.length);
     }
-  }, [thread.likes, thread.reposts, user]);
+    // Check if already following
+    if (user && user.following && thread.author) {
+      setIsFollowing(user.following.includes(thread.author._id));
+    }
+  }, [thread.likes, thread.reposts, user, thread.author]);
 
   // Lightbox states
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -356,6 +363,16 @@ export default function ThreadItem({ thread, onDelete }) {
     });
   }, []);
 
+  const handleAvatarClick = useCallback(
+    (e) => {
+      e.stopPropagation();
+      if (thread.author?._id) {
+        navigate(`/profile/${thread.author._id}`);
+      }
+    },
+    [thread.author, navigate]
+  );
+
   const handleToggleLike = useCallback(async () => {
     try {
       if (liked) {
@@ -388,20 +405,63 @@ export default function ThreadItem({ thread, onDelete }) {
     }
   }, [reposted, thread._id, token]);
 
+  const handleFollowToggle = useCallback(
+    async (e) => {
+      e.stopPropagation();
+      if (!thread.author || mine) return;
+
+      try {
+        if (isFollowing) {
+          await userApi.unfollowUser(thread.author._id, token);
+          setIsFollowing(false);
+        } else {
+          await userApi.followUser(thread.author._id, token);
+          setIsFollowing(true);
+        }
+      } catch (err) {
+        console.error("Toggle follow failed:", err);
+      }
+    },
+    [isFollowing, thread.author, token, mine]
+  );
+
   return (
     <div className="p-5 rounded-xl space-y-3 lux-card pop hover:shadow-lg transition-shadow duration-200">
       {/* Header */}
       <div className="flex items-center gap-3 text-sm">
         <div className="flex items-center gap-2">
-          <AvatarWithPlus
-            userId={thread.author?._id}
-            avatarUrl={thread.author?.avatarUrl}
-            size={36}
-          />
-          <span className="font-semibold text-base" style={{ color: "#000" }}>
+          <div onClick={handleAvatarClick} className="cursor-pointer">
+            <AvatarWithPlus
+              userId={thread.author?._id}
+              avatarUrl={thread.author?.avatarUrl}
+              size={36}
+            />
+          </div>
+          <span
+            onClick={handleAvatarClick}
+            className="font-semibold text-base cursor-pointer hover:underline"
+            style={{ color: "#000" }}
+          >
             {thread.author?.username || "Unknown"}
           </span>
           {thread.author?.isPro && <ProBadge />}
+
+          {/* Follow Button - only show if not own post */}
+          {!mine && thread.author && (
+            <button
+              onClick={handleFollowToggle}
+              className="text-xs px-3 py-1 rounded-full font-medium transition-all duration-200"
+              style={{
+                background: isFollowing
+                  ? "rgba(155,99,114,0.1)"
+                  : "linear-gradient(135deg, var(--accent), var(--pet-accent))",
+                color: isFollowing ? "#9b6372" : "#fff",
+                border: isFollowing ? "1px solid rgba(155,99,114,0.3)" : "none",
+              }}
+            >
+              {isFollowing ? "Đang theo dõi" : "Theo dõi"}
+            </button>
+          )}
         </div>
         <span className="text-xs muted pill">
           {new Date(thread.createdAt).toLocaleString("vi-VN")}

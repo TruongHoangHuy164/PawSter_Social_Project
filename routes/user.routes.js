@@ -14,6 +14,9 @@ import {
   searchUsers,
   cancelFriendRequest,
   removeFriend,
+  getUserById,
+  followUser,
+  unfollowUser,
 } from "../controllers/user.controller.js";
 import { profileUpload } from "../middleware/profileUpload.js";
 
@@ -37,5 +40,12 @@ router.get("/friends/requests/sent", authMiddleware, getSentRequests);
 
 // Search users
 router.get("/search", authMiddleware, searchUsers);
+
+// Follow/Unfollow
+router.post("/:id/follow", authMiddleware, followUser);
+router.delete("/:id/follow", authMiddleware, unfollowUser);
+
+// Public profile
+router.get("/:id", authMiddleware, getUserById);
 
 export default router;
