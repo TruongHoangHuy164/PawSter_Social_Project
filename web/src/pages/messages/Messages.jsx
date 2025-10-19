@@ -3,6 +3,7 @@ import { useAuth } from '../../state/auth.jsx';
 import { dmApi } from '../../utils/api.js';
 import { useSocket } from '../../state/socket.jsx';
 import Avatar from '../../ui/Avatar.jsx';
+import AudioWave from './AudioWave.jsx';
 
 export default function Messages(){
   const { token, user } = useAuth();
@@ -11,6 +12,13 @@ export default function Messages(){
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [rec, setRec] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [recordSec, setRecordSec] = useState(0);
+  const recordTimerRef = useRef(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [uploadPct, setUploadPct] = useState(0);
   const listRef = useRef(null);
   const idsRef = useRef(new Set()); // chống trùng lặp message theo _id
 
@@ -83,20 +91,57 @@ export default function Messages(){
 
   const send = async (e)=>{
     e.preventDefault();
-    if (!input.trim() || !active) return;
+    if ((!input.trim() && !audioBlob) || !active) return;
     try{
-      const res = await dmApi.send(
-        active._id,
-        { to: (active.participants||[]).find(p=> String(p._id)!==String(user?._id))?._id, content: input },
-        token
-      );
+      const otherId = (active.participants||[]).find(p=> String(p._id)!==String(user?._id))?._id;
+      let res;
+      if (audioBlob) {
+        const fd = new FormData();
+        fd.append('to', otherId);
+        if (input) fd.append('content', input);
+        fd.append('media', new File([audioBlob], `voice-${Date.now()}.webm`, { type: 'audio/webm' }));
+        // Use XHR to track progress
+        res = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', `/api/messages/conversations/${active._id}/messages`);
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              setUploadPct(Math.round((e.loaded / e.total) * 100));
+            }
+          };
+          xhr.onload = () => {
+            try {
+              const json = JSON.parse(xhr.responseText || '{}');
+              if (xhr.status >= 200 && xhr.status < 300) resolve({ data: json });
+              else reject(new Error(json?.message || 'Gửi tin nhắn thất bại'));
+            } catch (err) { reject(err); }
+          };
+          xhr.onerror = () => reject(new Error('Network error'));
+          xhr.send(fd);
+        });
+      } else {
+        res = await dmApi.send(
+          active._id,
+          { to: otherId, content: input },
+          token
+        );
+      }
       const msg = res.data.data;
+      if (audioBlob && Array.isArray(msg.media)) {
+        // Gắn URL tạm để phát ngay khi vừa gửi (server trả về chưa có signed URL)
+        const localUrl = URL.createObjectURL(audioBlob);
+        msg.media = msg.media.map(mm => mm.type === 'audio' && !mm.url ? { ...mm, url: localUrl } : mm);
+      }
       const id = String(msg._id);
       if (!idsRef.current.has(id)) {
         idsRef.current.add(id);
         setMessages(prev=>[...prev, msg]);
       }
       setInput('');
+      setAudioBlob(null);
+      setPreviewUrl('');
+      setUploadPct(0);
       setTimeout(()=>{ try{ listRef.current?.scrollTo({ top: 999999 }); }catch{} }, 0);
     }catch(err){ console.error(err); }
   };
@@ -163,7 +208,15 @@ export default function Messages(){
                   return (
                     <div key={m._id} className="flex justify-end">
                       <div className="max-w-[70%] px-3 py-2 rounded-2xl ml-auto text-white bg-gradient-to-br from-[color:var(--accent)] to-violet-500">
-                        <div>{m.content}</div>
+                        <div className="space-y-2">
+                          {m.media?.some(mm=>mm.type==='audio') ? (
+                            m.media.filter(mm=>mm.type==='audio').map((mm, idx)=>(
+                              <AudioWave key={idx} url={mm.url} />
+                            ))
+                          ) : (
+                            <div>{m.content}</div>
+                          )}
+                        </div>
                         <div className="text-[10px] text-white/70 mt-1 text-right">{formatAgo(m.createdAt)}</div>
                       </div>
                     </div>
@@ -174,7 +227,15 @@ export default function Messages(){
                   <div key={m._id} className="flex items-end gap-2">
                     <Avatar user={{ username: other.username, avatarUrl: other.avatarUrl }} size="sm" />
                     <div className="max-w-[70%] px-3 py-2 rounded-2xl bg-[color:var(--panel)]">
-                      <div>{m.content}</div>
+                      <div className="space-y-2">
+                        {m.media?.some(mm=>mm.type==='audio') ? (
+                          m.media.filter(mm=>mm.type==='audio').map((mm, idx)=>(
+                            <AudioWave key={idx} url={mm.url} />
+                          ))
+                        ) : (
+                          <div>{m.content}</div>
+                        )}
+                      </div>
                       <div className="text-[10px] text-muted mt-1">{formatAgo(m.createdAt)}</div>
                     </div>
                   </div>
@@ -183,8 +244,56 @@ export default function Messages(){
             </div>
             <form onSubmit={send} className="p-2 border-t flex items-center gap-2" style={{borderColor:'var(--panel-border)'}}>
               <input value={input} onChange={e=>setInput(e.target.value)} className="flex-1 px-3 py-2 rounded-xl bg-transparent border" style={{borderColor:'var(--panel-border)'}} placeholder="Nhập tin nhắn..." />
-              <button type="submit" className="px-4 py-2 rounded-xl text-white bg-gradient-to-br from-[color:var(--accent)] to-violet-500">Gửi</button>
+              <input type="file" accept="audio/*" className="hidden" id="audio-file-input" onChange={e=>{
+                const f = e.target.files?.[0]; if (f) { setAudioBlob(f); try{ const u = URL.createObjectURL(f); setPreviewUrl(u);}catch{} }
+              }} />
+              <button type="button" className="px-2 py-2 rounded-xl border" onClick={()=>document.getElementById('audio-file-input').click()} title="Đính kèm audio" disabled={uploadPct>0 && uploadPct<100}>🎵</button>
+              <button type="button" className={`px-2 py-2 rounded-xl border ${recording? 'bg-red-500 text-white' : ''}`} onClick={async ()=>{
+                if (recording) {
+                  rec?.stop();
+                  if (recordTimerRef.current) { clearInterval(recordTimerRef.current); recordTimerRef.current = null; }
+                } else {
+                  try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                    const chunks = [];
+                    mediaRecorder.ondataavailable = (e)=>{ if (e.data.size > 0) chunks.push(e.data); };
+                    mediaRecorder.onstop = ()=>{
+                      const blob = new Blob(chunks, { type: 'audio/webm' });
+                      setAudioBlob(blob);
+                      try { const u = URL.createObjectURL(blob); setPreviewUrl(u); } catch {}
+                      setRecording(false);
+                      stream.getTracks().forEach(t=>t.stop());
+                    };
+                    setRec(mediaRecorder);
+                    setRecording(true);
+                    setRecordSec(0);
+                    if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+                    recordTimerRef.current = setInterval(()=>setRecordSec(s=>s+1), 1000);
+                    mediaRecorder.start();
+                  } catch (err) { console.error(err); }
+                }
+              }} title={recording? 'Dừng ghi âm' : 'Ghi âm tin nhắn'}>
+                {recording ? '⏹️' : '🎙️'}
+              </button>
+              {recording && (
+                <span className="text-xs text-red-500 font-medium">Đang ghi: {String(Math.floor(recordSec/60)).padStart(2,'0')}:{String(recordSec%60).padStart(2,'0')}</span>
+              )}
+              {previewUrl && !recording && (
+                <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 px-2 py-1 rounded-lg">
+                  <AudioWave url={previewUrl} height={36} />
+                  <button type="button" className="text-xs px-2 py-1 rounded border" onClick={()=>{ setAudioBlob(null); if (previewUrl) { try{ URL.revokeObjectURL(previewUrl);}catch{} } setPreviewUrl(''); setRecordSec(0); }}>
+                    Xóa
+                  </button>
+                </div>
+              )}
+              <button type="submit" disabled={uploadPct>0 && uploadPct<100} className="px-4 py-2 rounded-xl text-white bg-gradient-to-br from-[color:var(--accent)] to-violet-500 disabled:opacity-60">{uploadPct>0 && uploadPct<100 ? `Đang gửi ${uploadPct}%` : 'Gửi'}</button>
             </form>
+            {uploadPct>0 && uploadPct<100 && (
+              <div className="mx-2 mb-2 h-1 rounded bg-black/10 dark:bg-white/10 overflow-hidden">
+                <div className="h-full bg-violet-500" style={{ width: `${uploadPct}%` }} />
+              </div>
+            )}
           </>
         )}
       </section>
