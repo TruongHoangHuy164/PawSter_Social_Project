@@ -9,7 +9,7 @@ export default function Avatar({ user, size = "md" }) {
     lg: "w-12 h-12 text-base",
     xl: "w-16 h-16 text-lg",
   };
-
+  // follow
   // Show initials if no avatar URL or image failed to load
   if (!user?.avatarUrl || imageError) {
     return (
