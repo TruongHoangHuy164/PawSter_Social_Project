@@ -28,8 +28,10 @@ export default function Profile() {
   const [msg, setMsg] = useState("");
   const [threads, setThreads] = useState([]);
   const [reposts, setReposts] = useState([]);
+  const [comments, setComments] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [repostsLoaded, setRepostsLoaded] = useState(false);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
   const proExpiryStr = React.useMemo(() => {
     if (!user?.proExpiry) return "";
     try {
@@ -68,6 +70,20 @@ export default function Profile() {
       }
     })();
   }, [token, user, activeTab, repostsLoaded]);
+
+  // Fetch comments when replies tab is active
+  React.useEffect(() => {
+    if (!token || !user || activeTab !== "replies" || commentsLoaded) return;
+    (async () => {
+      try {
+        const res = await api.get(`/comments/user/${user._id}`, token);
+        setComments(res.data.data || []);
+        setCommentsLoaded(true);
+      } catch (e) {
+        console.error("Failed to fetch comments:", e);
+      }
+    })();
+  }, [token, user, activeTab, commentsLoaded]);
 
   const mediaThreads = useMemo(
     () => threads.filter((t) => t.media && t.media.length > 0),
@@ -349,11 +365,140 @@ export default function Profile() {
           ) : (
             <div className="text-sm text-neutral-500">Không có media</div>
           ))}
-        {activeTab === "replies" && (
-          <div className="text-sm text-neutral-500">
-            (Chưa implement lọc replies)
-          </div>
-        )}
+        {activeTab === "replies" &&
+          (comments.length ? (
+            <div className="space-y-4">
+              {comments.map((comment) => (
+                <div key={comment._id} className="card p-4 space-y-3">
+                  {/* Comment Header */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                      {comment.author?.username?.[0]?.toUpperCase() || "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold">
+                          {comment.author?.username || "Unknown"}
+                        </span>
+                        {comment.author?.isPro && (
+                          <span className="text-xs bg-yellow-500/20 text-yellow-600 px-2 py-0.5 rounded">
+                            PRO
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-500">•</span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(comment.createdAt).toLocaleString("vi-VN")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Original Thread Context */}
+                  {comment.threadId && (
+                    <div className="ml-13 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+                      <div className="text-xs text-gray-500 mb-1 flex items-center gap-2">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                        </svg>
+                        <span>
+                          Trả lời bài viết của{" "}
+                          <span className="font-medium">
+                            {comment.threadId.author?.username || "Unknown"}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
+                        {comment.threadId.content}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Comment Content */}
+                  <div className="ml-13">
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+                      <div className="text-sm whitespace-pre-wrap break-words">
+                        {comment.content}
+                      </div>
+
+                      {/* Comment Media */}
+                      {comment.media && comment.media.length > 0 && (
+                        <div
+                          className="mt-2 grid gap-2"
+                          style={{
+                            gridTemplateColumns:
+                              comment.media.length === 1
+                                ? "1fr"
+                                : "repeat(2, 1fr)",
+                          }}
+                        >
+                          {comment.media.map((media, idx) => (
+                            <div key={idx} className="rounded overflow-hidden">
+                              {media.type === "image" && (
+                                <img
+                                  src={`${import.meta.env.VITE_API_URL}/media/${
+                                    media.key
+                                  }`}
+                                  alt="Comment media"
+                                  className="w-full h-auto object-cover"
+                                />
+                              )}
+                              {media.type === "video" && (
+                                <video
+                                  src={`${import.meta.env.VITE_API_URL}/media/${
+                                    media.key
+                                  }`}
+                                  controls
+                                  className="w-full h-auto"
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Comment Stats */}
+                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill={
+                            comment.likesCount > 0 ? "currentColor" : "none"
+                          }
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                        <span>{comment.likesCount || 0}</span>
+                      </div>
+                      {comment.threadId && (
+                        <a
+                          href={`/thread/${comment.threadId._id}`}
+                          className="text-blue-500 hover:text-blue-600 transition-colors"
+                        >
+                          → Xem bài viết gốc
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-neutral-500 text-center py-8">
+              Bạn chưa có phản hồi nào
+            </div>
+          ))}
         {activeTab === "reposts" &&
           (reposts.length ? (
             reposts.map((t) => (
