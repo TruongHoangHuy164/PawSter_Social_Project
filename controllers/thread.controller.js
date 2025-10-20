@@ -62,20 +62,16 @@ export const createThread = asyncHandler(async (req, res) => {
   }
   for (const f of files) {
     if (f.size > MAX_FILE_SIZE) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: `${f.originalname} exceeds per-file size limit`,
-        });
+      return res.status(400).json({
+        success: false,
+        message: `${f.originalname} exceeds per-file size limit`,
+      });
     }
     if (!ALLOWED_PREFIX.some((p) => f.mimetype.startsWith(p))) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: `${f.originalname} unsupported type`,
-        });
+      return res.status(400).json({
+        success: false,
+        message: `${f.originalname} unsupported type`,
+      });
     }
   }
 
@@ -174,7 +170,13 @@ export const createThread = asyncHandler(async (req, res) => {
 });
 
 export const listThreads = asyncHandler(async (req, res) => {
-  const threads = await Thread.find()
+  // Support filtering by author userId via query param ?author=userId
+  const filter = {};
+  if (req.query.author) {
+    filter.author = req.query.author;
+  }
+
+  const threads = await Thread.find(filter)
     .sort({ createdAt: -1 })
     .limit(200)
     .populate("author", "username isPro badges avatarKey");
@@ -286,19 +288,15 @@ export const createReply = asyncHandler(async (req, res) => {
       .json({ success: false, message: "Total media too large" });
   for (const f of files) {
     if (f.size > MAX_FILE_SIZE)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: `${f.originalname} exceeds per-file size limit`,
-        });
+      return res.status(400).json({
+        success: false,
+        message: `${f.originalname} exceeds per-file size limit`,
+      });
     if (!ALLOWED_PREFIX.some((p) => f.mimetype.startsWith(p)))
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: `${f.originalname} unsupported type`,
-        });
+      return res.status(400).json({
+        success: false,
+        message: `${f.originalname} unsupported type`,
+      });
   }
 
   const concurrency = 3;

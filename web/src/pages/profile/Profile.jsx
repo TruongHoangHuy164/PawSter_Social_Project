@@ -45,17 +45,18 @@ export default function Profile() {
 
   // Fetch threads once (simple load) for demonstration
   React.useEffect(() => {
-    if (!token || loaded) return;
+    if (!token || !user || loaded) return;
     (async () => {
       try {
-        const res = await api.get("/threads", token);
+        // Fetch only threads authored by this user
+        const res = await api.get(`/threads?author=${user._id}`, token);
         setThreads(res.data.data || []);
         setLoaded(true);
       } catch (e) {
         console.error(e);
       }
     })();
-  }, [token, loaded]);
+  }, [token, user, loaded]);
 
   // Fetch reposts when reposts tab is active
   React.useEffect(() => {
@@ -173,7 +174,7 @@ export default function Profile() {
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6 page-panel">
       {/* COVER SECTION */}
-  <div className="relative h-44 rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-transparent flex items-center justify-center text-neutral-600 card">
+      <div className="relative h-44 rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-transparent flex items-center justify-center text-neutral-600 card">
         {cover ? (
           <img src={cover} alt="cover" className="object-cover w-full h-full" />
         ) : remoteCover ? (
@@ -243,15 +244,25 @@ export default function Profile() {
           <div className="flex gap-4 text-xs text-neutral-400">
             <span>
               <span className="text-neutral-200 font-medium">
-                {user.friends?.length || 0}
+                {user.followers?.length || 0}
               </span>{" "}
               người theo dõi
             </span>
             <span>
               <span className="text-neutral-200 font-medium">
+                {user.following?.length || 0}
+              </span>{" "}
+              đang theo dõi
+            </span>
+            <span>
+              <span className="text-neutral-200 font-medium">
+                {user.friends?.length || 0}
+              </span>
+              {" / "}
+              <span className="text-neutral-300 font-medium">
                 {user.friendLimit || 0}
               </span>{" "}
-              giới hạn
+              bạn bè
             </span>
             {user.isPro && (
               <span className="flex items-center gap-2 text-xs px-2 py-0.5 rounded-full border border-black/20 dark:border-white/20">
@@ -267,7 +278,7 @@ export default function Profile() {
         </div>
       </div>
       {/* EDIT FIELDS */}
-  <div className="bg-transparent border border-black/10 dark:border-white/10 rounded-2xl p-5 space-y-5 card">
+      <div className="bg-transparent border border-black/10 dark:border-white/10 rounded-2xl p-5 space-y-5 card">
         <div className="grid md:grid-cols-2 gap-5">
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-wide text-neutral-400">
@@ -333,7 +344,7 @@ export default function Profile() {
         )}
       </div>
       {/* TABS */}
-  <div className="border-b border-black/10 dark:border-white/10 flex gap-8 px-2 text-sm">
+      <div className="border-b border-black/10 dark:border-white/10 flex gap-8 px-2 text-sm">
         {TABS.map((t) => (
           <button
             key={t.key}
