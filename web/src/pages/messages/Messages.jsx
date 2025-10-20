@@ -4,6 +4,8 @@ import { dmApi } from '../../utils/api.js';
 import { useSocket } from '../../state/socket.jsx';
 import Avatar from '../../ui/Avatar.jsx';
 import AudioWave from './AudioWave.jsx';
+import CallModal from '../../ui/CallModal.jsx';
+import IncomingCallModal from '../../ui/IncomingCallModal.jsx';
 
 export default function Messages(){
   const { token, user } = useAuth();
@@ -23,6 +25,10 @@ export default function Messages(){
   const [uploadPct, setUploadPct] = useState(0);
   const listRef = useRef(null);
   const idsRef = useRef(new Set()); // chống trùng lặp message theo _id
+  const [callOpen, setCallOpen] = useState(false);
+  const [callMode, setCallMode] = useState('caller');
+  const [incomingOffer, setIncomingOffer] = useState(null);
+  const [incomingVisible, setIncomingVisible] = useState(false);
 
   const formatAgo = (ts) => {
     if (!ts) return '';
@@ -72,7 +78,14 @@ export default function Messages(){
       setTimeout(()=>{ try{ listRef.current?.scrollTo({ top: 999999 }); }catch{} }, 0);
     };
     socket.on('dm:new_message', onNew);
-    return ()=>socket.off('dm:new_message', onNew);
+    const onOffer = ({ conversationId: cid, fromUserId, sdp }) => {
+      if (String(cid) !== String(active?._id)) return;
+      // Hiện modal Accept/Decline trước khi mở CallModal
+      setIncomingOffer({ sdp, fromUserId });
+      setIncomingVisible(true);
+    };
+    socket.on('call:offer', onOffer);
+    return ()=>{ socket.off('dm:new_message', onNew); socket.off('call:offer', onOffer); };
   },[socket, active]);
 
   // Khi nhận thông báo tin nhắn mới ở hội thoại khác, tăng badge
@@ -217,6 +230,9 @@ export default function Messages(){
                 <>
                   <Avatar user={{ username: other.username, avatarUrl: other.avatarUrl }} size="sm" />
                   <div className="text-sm font-medium">{other.username || 'Người dùng'}</div>
+                  <div className="ml-auto flex items-center gap-2">
+                    <button className="px-2 py-1 rounded-xl border" title="Gọi video" onClick={()=>{ setCallMode('caller'); setIncomingOffer(null); setCallOpen(true); }}>📹</button>
+                  </div>
                 </>
               );})()}
             </header>
@@ -336,6 +352,25 @@ export default function Messages(){
               <div className="mx-2 mb-2 h-1 rounded bg-black/10 dark:bg-white/10 overflow-hidden">
                 <div className="h-full bg-black dark:bg-white" style={{ width: `${uploadPct}%` }} />
               </div>
+            )}
+            {active && (
+              <CallModal
+                isOpen={callOpen}
+                onClose={()=>{ setCallOpen(false); setIncomingOffer(null); setCallMode('caller'); }}
+                conversationId={active._id}
+                selfUserId={user?._id}
+                otherUserId={(active.participants||[]).find(p=> String(p._id)!==String(user?._id))?._id}
+                mode={callMode}
+                remoteOffer={incomingOffer?.sdp || null}
+              />
+            )}
+            {incomingVisible && active && (
+              <IncomingCallModal
+                isOpen={incomingVisible}
+                callerUser={(active.participants||[]).find(p=> String(p._id)===String(incomingOffer?.fromUserId))}
+                onDecline={()=>{ try{ socket?.emit('call:hangup', { toUserId: incomingOffer?.fromUserId, conversationId: active._id }); }catch{} setIncomingVisible(false); setIncomingOffer(null); }}
+                onAccept={()=>{ setIncomingVisible(false); setCallMode('callee'); setCallOpen(true); }}
+              />
             )}
           </>
         )}

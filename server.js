@@ -292,6 +292,54 @@ io.on("connection", (socket) => {
   socket.on('dm:leave', (conversationId) => {
     socket.leave(`dm_${conversationId}`);
   });
+
+  // ====== WebRTC Call Signaling ======
+  // Caller sends offer to callee (toUserId) for a specific conversation
+  socket.on('call:offer', ({ toUserId, conversationId, sdp }) => {
+    if (!toUserId || !conversationId || !sdp) return;
+    try {
+      io.to(`user_${toUserId}`).emit('call:offer', {
+        conversationId,
+        fromUserId: socket.userId,
+        sdp,
+      });
+    } catch {}
+  });
+
+  // Callee sends answer back to caller
+  socket.on('call:answer', ({ toUserId, conversationId, sdp }) => {
+    if (!toUserId || !conversationId || !sdp) return;
+    try {
+      io.to(`user_${toUserId}`).emit('call:answer', {
+        conversationId,
+        fromUserId: socket.userId,
+        sdp,
+      });
+    } catch {}
+  });
+
+  // Exchange ICE candidates
+  socket.on('call:candidate', ({ toUserId, conversationId, candidate }) => {
+    if (!toUserId || !conversationId || !candidate) return;
+    try {
+      io.to(`user_${toUserId}`).emit('call:candidate', {
+        conversationId,
+        fromUserId: socket.userId,
+        candidate,
+      });
+    } catch {}
+  });
+
+  // Hang up / end call
+  socket.on('call:hangup', ({ toUserId, conversationId }) => {
+    if (!toUserId || !conversationId) return;
+    try {
+      io.to(`user_${toUserId}`).emit('call:hangup', {
+        conversationId,
+        fromUserId: socket.userId,
+      });
+    } catch {}
+  });
 });
 
 connectDB().then(async () => {
