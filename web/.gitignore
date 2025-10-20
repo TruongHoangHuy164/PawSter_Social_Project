@@ -1,0 +1,4 @@
+# Certs and local env
+certs/*.pfx
+certs/*.pem
+.env
