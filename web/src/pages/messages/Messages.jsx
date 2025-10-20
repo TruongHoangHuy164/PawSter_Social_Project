@@ -13,6 +13,8 @@ export default function Messages(){
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [audioBlob, setAudioBlob] = useState(null);
+  const [attachmentFile, setAttachmentFile] = useState(null);
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState('');
   const [rec, setRec] = useState(null);
   const [recording, setRecording] = useState(false);
   const [recordSec, setRecordSec] = useState(0);
@@ -91,15 +93,22 @@ export default function Messages(){
 
   const send = async (e)=>{
     e.preventDefault();
-    if ((!input.trim() && !audioBlob) || !active) return;
+    if ((!input.trim() && !audioBlob && !attachmentFile) || !active) return;
     try{
       const otherId = (active.participants||[]).find(p=> String(p._id)!==String(user?._id))?._id;
       let res;
-      if (audioBlob) {
+      if (audioBlob || attachmentFile) {
         const fd = new FormData();
         fd.append('to', otherId);
         if (input) fd.append('content', input);
-        fd.append('media', new File([audioBlob], `voice-${Date.now()}.webm`, { type: 'audio/webm' }));
+        if (attachmentFile) {
+          // Preserve original filename and mimetype for generic attachments
+          fd.append('media', attachmentFile);
+        }
+        if (audioBlob) {
+          // Recorded audio blob
+          fd.append('media', new File([audioBlob], `voice-${Date.now()}.webm`, { type: 'audio/webm' }));
+        }
         // Use XHR to track progress
         res = await new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
@@ -129,9 +138,16 @@ export default function Messages(){
       }
       const msg = res.data.data;
       if (audioBlob && Array.isArray(msg.media)) {
-        // Gắn URL tạm để phát ngay khi vừa gửi (server trả về chưa có signed URL)
+        // Temp URL for recorded audio so it can play immediately
         const localUrl = URL.createObjectURL(audioBlob);
         msg.media = msg.media.map(mm => mm.type === 'audio' && !mm.url ? { ...mm, url: localUrl } : mm);
+      }
+      if (attachmentFile && Array.isArray(msg.media)) {
+        // Temp URL for attached file (image/video/other) so it can show immediately
+        const localUrl = attachmentPreviewUrl;
+        const mime = attachmentFile.type || '';
+        const t = mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : mime.startsWith('audio/') ? 'audio' : 'other';
+        msg.media = msg.media.map(mm => mm.type === t && !mm.url ? { ...mm, url: localUrl } : mm);
       }
       const id = String(msg._id);
       if (!idsRef.current.has(id)) {
@@ -141,6 +157,9 @@ export default function Messages(){
       setInput('');
       setAudioBlob(null);
       setPreviewUrl('');
+      setAttachmentFile(null);
+      if (attachmentPreviewUrl) { try { URL.revokeObjectURL(attachmentPreviewUrl); } catch {} }
+      setAttachmentPreviewUrl('');
       setUploadPct(0);
       setTimeout(()=>{ try{ listRef.current?.scrollTo({ top: 999999 }); }catch{} }, 0);
     }catch(err){ console.error(err); }
@@ -162,10 +181,10 @@ export default function Messages(){
   }, [token, active]);
 
   return (
-    <div className="grid grid-cols-12 gap-4 h-[calc(100vh-80px)]">
-  <aside className="col-span-5 md:col-span-4 lg:col-span-3 p-2 rounded-2xl bg-white dark:bg-black border border-black/10 dark:border-white/10">
+    <div className="grid grid-cols-12 gap-4 h-[calc(100vh-80px)] min-h-0 overflow-hidden">
+  <aside className="col-span-5 md:col-span-4 lg:col-span-3 p-2 rounded-2xl bg-white dark:bg-black border border-black/10 dark:border-white/10 flex flex-col h-full min-h-0">
         <div className="font-semibold mb-2">Hội thoại</div>
-        <div className="space-y-1 overflow-y-auto h-[calc(100%-40px)] pr-1">
+        <div className="space-y-1 overflow-y-auto flex-1 min-h-0 pr-1">
           {conversations.map(c=>{
             const other = (c.participants||[]).find(p=> String(p._id) !== String(user?._id)) || {};
             return (
@@ -188,7 +207,7 @@ export default function Messages(){
           })}
         </div>
       </aside>
-  <section className="col-span-7 md:col-span-8 lg:col-span-9 flex flex-col rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-black">
+  <section className="col-span-7 md:col-span-8 lg:col-span-9 flex flex-col h-full min-h-0 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-black overflow-hidden">
         {!active ? (
           <div className="m-auto text-sm text-muted">Chọn một hội thoại để bắt đầu</div>
         ) : (
@@ -201,7 +220,7 @@ export default function Messages(){
                 </>
               );})()}
             </header>
-            <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-2">
+            <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
               {messages.map(m=>{
                 const mine = String(m.from) === String(user?._id) || String(m.from?._id) === String(user?._id);
                 if (mine) {
@@ -209,13 +228,17 @@ export default function Messages(){
                     <div key={m._id} className="flex justify-end">
                       <div className="max-w-[70%] px-3 py-2 rounded-2xl ml-auto text-white bg-black dark:bg-white dark:text-black">
                         <div className="space-y-2">
-                          {m.media?.some(mm=>mm.type==='audio') ? (
-                            m.media.filter(mm=>mm.type==='audio').map((mm, idx)=>(
-                              <AudioWave key={idx} url={mm.url} />
-                            ))
-                          ) : (
-                            <div>{m.content}</div>
-                          )}
+                          {m.content ? (<div>{m.content}</div>) : null}
+                          {Array.isArray(m.media) && m.media.map((mm, idx) => {
+                            if (mm.type === 'audio') return <AudioWave key={idx} url={mm.url} />;
+                            if (mm.type === 'image') return <img key={idx} src={mm.url} alt="image" className="rounded-lg max-h-64 object-contain" />;
+                            if (mm.type === 'video') return <video key={idx} src={mm.url} controls className="rounded-lg max-h-64" />;
+                            return (
+                              <a key={idx} href={mm.url} target="_blank" rel="noreferrer" className="text-xs underline break-all">
+                                {mm.url ? 'Tải tệp' : '[tệp]'}
+                              </a>
+                            );
+                          })}
                         </div>
                         <div className="text-[10px] text-white/70 mt-1 text-right">{formatAgo(m.createdAt)}</div>
                       </div>
@@ -228,13 +251,17 @@ export default function Messages(){
                     <Avatar user={{ username: other.username, avatarUrl: other.avatarUrl }} size="sm" />
                     <div className="max-w-[70%] px-3 py-2 rounded-2xl bg-black/5 dark:bg-white/5">
                       <div className="space-y-2">
-                        {m.media?.some(mm=>mm.type==='audio') ? (
-                          m.media.filter(mm=>mm.type==='audio').map((mm, idx)=>(
-                            <AudioWave key={idx} url={mm.url} />
-                          ))
-                        ) : (
-                          <div>{m.content}</div>
-                        )}
+                        {m.content ? (<div>{m.content}</div>) : null}
+                        {Array.isArray(m.media) && m.media.map((mm, idx) => {
+                          if (mm.type === 'audio') return <AudioWave key={idx} url={mm.url} />;
+                          if (mm.type === 'image') return <img key={idx} src={mm.url} alt="image" className="rounded-lg max-h-64 object-contain" />;
+                          if (mm.type === 'video') return <video key={idx} src={mm.url} controls className="rounded-lg max-h-64" />;
+                          return (
+                            <a key={idx} href={mm.url} target="_blank" rel="noreferrer" className="text-xs underline break-all">
+                              {mm.url ? 'Tải tệp' : '[tệp]'}
+                            </a>
+                          );
+                        })}
                       </div>
                       <div className="text-[10px] text-muted mt-1">{formatAgo(m.createdAt)}</div>
                     </div>
@@ -244,10 +271,14 @@ export default function Messages(){
             </div>
             <form onSubmit={send} className="p-2 border-t flex items-center gap-2 border-black/10 dark:border-white/10">
               <input value={input} onChange={e=>setInput(e.target.value)} className="flex-1 px-3 py-2 rounded-xl bg-transparent border border-black/10 dark:border-white/10" placeholder="Nhập tin nhắn..." />
-              <input type="file" accept="audio/*" className="hidden" id="audio-file-input" onChange={e=>{
-                const f = e.target.files?.[0]; if (f) { setAudioBlob(f); try{ const u = URL.createObjectURL(f); setPreviewUrl(u);}catch{} }
+              <input type="file" className="hidden" id="file-input" onChange={e=>{
+                const f = e.target.files?.[0];
+                if (f) {
+                  setAttachmentFile(f);
+                  try { const u = URL.createObjectURL(f); setAttachmentPreviewUrl(u); } catch {}
+                }
               }} />
-              <button type="button" className="px-2 py-2 rounded-xl border" onClick={()=>document.getElementById('audio-file-input').click()} title="Đính kèm audio" disabled={uploadPct>0 && uploadPct<100}>🎵</button>
+              <button type="button" className="px-2 py-2 rounded-xl border" onClick={()=>document.getElementById('file-input').click()} title="Đính kèm tệp" disabled={uploadPct>0 && uploadPct<100}>📎</button>
               <button type="button" className={`px-2 py-2 rounded-xl border ${recording? 'bg-red-500 text-white' : ''}`} onClick={async ()=>{
                 if (recording) {
                   rec?.stop();
@@ -283,6 +314,18 @@ export default function Messages(){
                 <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 px-2 py-1 rounded-lg">
                   <AudioWave url={previewUrl} height={36} />
                   <button type="button" className="text-xs px-2 py-1 rounded border" onClick={()=>{ setAudioBlob(null); if (previewUrl) { try{ URL.revokeObjectURL(previewUrl);}catch{} } setPreviewUrl(''); setRecordSec(0); }}>
+                    Xóa
+                  </button>
+                </div>
+              )}
+              {attachmentFile && !recording && (
+                <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 px-2 py-1 rounded-lg">
+                  {attachmentFile.type?.startsWith('audio/') ? (
+                    <AudioWave url={attachmentPreviewUrl} height={36} />
+                  ) : (
+                    <div className="text-xs truncate max-w-[180px]" title={attachmentFile.name}>📎 {attachmentFile.name}</div>
+                  )}
+                  <button type="button" className="text-xs px-2 py-1 rounded border" onClick={()=>{ setAttachmentFile(null); if (attachmentPreviewUrl) { try{ URL.revokeObjectURL(attachmentPreviewUrl);}catch{} } setAttachmentPreviewUrl(''); }}>
                     Xóa
                   </button>
                 </div>
