@@ -147,3 +147,45 @@ Payments (demo):
 ---
 
 Chúc bạn chạy dự án thuận lợi! Nếu muốn, mình có thể thêm README tiếng Anh/chi tiết hơn cho phần deploy.
+
+## HTTPS Dev (WebRTC camera/mic qua LAN)
+
+WebRTC (camera/mic) yêu cầu "secure context". Truy cập từ thiết bị khác trong LAN qua HTTP sẽ không xin được quyền camera/mic. Có 2 cách đơn giản để test qua LAN:
+
+### Cách A: Dùng HTTPS dev với chứng chỉ tự ký (mkcert)
+
+1) Cài mkcert: https://github.com/FiloSottile/mkcert
+
+2) Tạo chứng chỉ cho dev server (ví dụ IP LAN máy bạn là 192.168.1.50):
+
+```
+cd web
+mkdir certs
+mkcert -install
+mkcert -key certs/dev-key.pem -cert-file certs/dev-cert.pem 192.168.1.50 localhost 127.0.0.1
+```
+
+3) Chạy Vite với HTTPS:
+
+Windows PowerShell (ví dụ):
+
+```
+$env:USE_HTTPS="1"
+$env:VITE_DEV_HTTPS_CERT="$PWD/certs/dev-cert.pem"
+$env:VITE_DEV_HTTPS_KEY="$PWD/certs/dev-key.pem"
+npm run dev
+```
+
+Sau đó mở trên điện thoại: `https://192.168.1.50:5022` (chấp nhận cảnh báo do cert tự ký). Khi bấm gọi video, trình duyệt mới hiện popup xin quyền.
+
+Lưu ý: iOS có thể yêu cầu tin cậy CA cục bộ của mkcert. Tham khảo tài liệu mkcert.
+
+### Cách B: Dùng tunnel HTTPS (không cần tự tạo cert)
+
+- Ngrok: https://ngrok.com/
+- Cloudflare Tunnel: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+- Localtunnel: https://github.com/localtunnel/localtunnel
+
+Chạy Vite bình thường (HTTP), sau đó mở tunnel tới cổng 5022. Dùng URL https tunnel trên điện thoại để test WebRTC.
+
+Mẹo: Tránh mở trong in-app browser (Facebook, Zalo). Hãy mở bằng Chrome/Safari gốc để quyền camera/mic hoạt động ổn định.

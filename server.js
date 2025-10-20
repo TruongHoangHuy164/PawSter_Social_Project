@@ -106,6 +106,8 @@ const allowedOrigins = new Set(
 const io = new Server(server, {
   cors: {
     origin: (origin, cb) => {
+      // In development, allow any origin to simplify LAN/HTTPS dev
+      if (process.env.NODE_ENV !== "production") return cb(null, true);
       if (!origin) return cb(null, true);
       if (envOrigins.includes("*")) return cb(null, true);
       const norm = normalizeOrigin(origin);
@@ -124,6 +126,8 @@ const io = new Server(server, {
 app.use(
   cors({
     origin: (origin, cb) => {
+      // In development, allow any origin to simplify LAN/HTTPS dev
+      if (process.env.NODE_ENV !== "production") return cb(null, true);
       // Allow same-origin/no Origin and any explicitly allowed origin
       if (!origin) return cb(null, true);
       if (envOrigins.includes("*")) return cb(null, true);

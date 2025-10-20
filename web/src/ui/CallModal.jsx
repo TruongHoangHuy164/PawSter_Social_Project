@@ -12,13 +12,31 @@ import { useSocket } from '../state/socket.jsx';
 export default function CallModal({ isOpen, onClose, conversationId, selfUserId, otherUserId, mode = 'caller', remoteOffer }) {
   const { socket } = useSocket();
   const [status, setStatus] = useState('init'); // init | connecting | connected | error | ended
+  const [consented, setConsented] = useState(false); // user explicitly allowed mic/cam for this call
+  const [errorText, setErrorText] = useState('');
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
+  const supportsMedia = typeof navigator !== 'undefined' && (
+    (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') ||
+    navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia
+  );
+
+  const getMedia = (constraints) => {
+    if (navigator?.mediaDevices?.getUserMedia) {
+      return navigator.mediaDevices.getUserMedia(constraints);
+    }
+    const legacy = navigator?.getUserMedia || navigator?.webkitGetUserMedia || navigator?.mozGetUserMedia;
+    return new Promise((resolve, reject) => {
+      if (!legacy) return reject(new Error('getUserMedia unsupported'));
+      try { legacy.call(navigator, constraints, (stream) => resolve(stream), (err) => reject(err)); } catch (e) { reject(e); }
+    });
+  };
+
   useEffect(() => {
-    if (!isOpen) return;
+  if (!isOpen || !consented) return; // wait for in-app consent each time
 
     const pc = new RTCPeerConnection({ iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }] });
     pcRef.current = pc;
@@ -39,8 +57,17 @@ export default function CallModal({ isOpen, onClose, conversationId, selfUserId,
 
     const start = async () => {
       try {
+        if (!supportsMedia) {
+          setErrorText('Trình duyệt không hỗ trợ getUserMedia. Hãy thử cập nhật trình duyệt hoặc dùng Chrome/Edge/Firefox mới.');
+          setStatus('error');
+          return;
+        }
+        if (typeof window !== 'undefined' && window.isSecureContext === false) {
+          // Non-secure context can block media on some browsers
+          setErrorText('Truy cập thiết bị có thể bị chặn trên kết nối không an toàn. Vui lòng dùng HTTPS hoặc localhost.');
+        }
         setStatus('connecting');
-        const local = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const local = await getMedia({ video: true, audio: true });
         localStreamRef.current = local;
         if (localVideoRef.current) localVideoRef.current.srcObject = local;
         local.getTracks().forEach(t => pc.addTrack(t, local));
@@ -57,11 +84,12 @@ export default function CallModal({ isOpen, onClose, conversationId, selfUserId,
         }
       } catch (err) {
         console.error('Call start error', err);
+        setErrorText(err?.message || 'Không thể khởi tạo cuộc gọi');
         setStatus('error');
       }
     };
 
-    start();
+  start();
 
     const onAnswer = async ({ conversationId: cid, fromUserId, sdp }) => {
       if (String(cid) !== String(conversationId) || String(fromUserId) !== String(otherUserId)) return;
@@ -112,7 +140,16 @@ export default function CallModal({ isOpen, onClose, conversationId, selfUserId,
     return () => {
       cleanup();
     };
-  }, [isOpen, conversationId, otherUserId, mode, remoteOffer, socket, onClose]);
+  }, [isOpen, consented, conversationId, otherUserId, mode, remoteOffer, socket, onClose, supportsMedia]);
+
+  // Reset consent when modal closes so user explicitly allows next time too
+  useEffect(() => {
+    if (!isOpen) {
+      setConsented(false);
+      setStatus('init');
+      setErrorText('');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
   return (
@@ -121,6 +158,24 @@ export default function CallModal({ isOpen, onClose, conversationId, selfUserId,
         <div className="absolute top-2 left-2 text-xs px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black">{status === 'connecting' ? 'Đang kết nối...' : status === 'connected' ? 'Đang gọi' : status === 'error' ? 'Lỗi cuộc gọi' : 'Cuộc gọi'}</div>
         <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
         <video ref={localVideoRef} autoPlay muted playsInline className="absolute bottom-3 right-3 w-40 h-28 object-cover rounded-lg border border-black/20 dark:border-white/20 bg-black/40" />
+        {!consented && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+            <div className="max-w-md text-center text-white p-4">
+              <div className="text-sm mb-2">Ứng dụng cần quyền truy cập Micro và Camera để thực hiện cuộc gọi video.</div>
+              <div className="text-xs mb-4 opacity-80">Khi trình duyệt hiển thị hộp thoại, vui lòng bấm Cho phép (Allow). Bạn có thể thay đổi quyền ở biểu tượng ổ khoá trên thanh địa chỉ.</div>
+              <button onClick={()=>setConsented(true)} className="px-4 py-2 rounded-xl bg-white text-black">Bật mic & cam</button>
+            </div>
+          </div>
+        )}
+        {status === 'error' && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+            <div className="max-w-md text-center text-white p-4">
+              <div className="text-sm mb-3">{errorText || 'Đã xảy ra lỗi khi bắt đầu cuộc gọi.'}</div>
+              <div className="text-xs opacity-80 mb-4">Đảm bảo trình duyệt hỗ trợ WebRTC và bạn đang dùng HTTPS hoặc localhost.</div>
+              <button onClick={()=>{ setStatus('init'); setErrorText(''); setConsented(false); }} className="px-4 py-2 rounded-xl bg-white text-black">Thử lại</button>
+            </div>
+          </div>
+        )}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3">
           <button onClick={() => { try { pcRef.current?.getSenders().forEach(s => { if (s.track && s.track.kind === 'audio') s.track.enabled = !s.track.enabled; }); } catch {} }} className="px-3 py-2 rounded-xl border">Mic</button>
           <button onClick={() => { try { pcRef.current?.getSenders().forEach(s => { if (s.track && s.track.kind === 'video') s.track.enabled = !s.track.enabled; }); } catch {} }} className="px-3 py-2 rounded-xl border">Cam</button>
