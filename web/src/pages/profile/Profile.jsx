@@ -172,9 +172,9 @@ export default function Profile() {
   if (!user) return null;
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-6 page-panel">
+    <div className="max-w-4xl mx-auto p-4 space-y-6 page-panel">
       {/* COVER SECTION */}
-      <div className="relative h-44 rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-transparent flex items-center justify-center text-neutral-600 card">
+      <div className="relative h-56 rounded-3xl overflow-hidden border-2 border-black/10 dark:border-white/10 bg-neutral-100 dark:bg-neutral-900 shadow-lg">
         {cover ? (
           <img src={cover} alt="cover" className="object-cover w-full h-full" />
         ) : remoteCover ? (
@@ -184,15 +184,29 @@ export default function Profile() {
             className="object-cover w-full h-full"
           />
         ) : (
-          <span className="text-sm">Chưa có ảnh bìa</span>
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center space-y-2">
+              <svg
+                className="w-16 h-16 mx-auto text-neutral-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <span className="text-sm text-neutral-500 font-medium">
+                Chưa có ảnh bìa
+              </span>
+            </div>
+          </div>
         )}
-        <label
-          className="absolute top-2 right-2 text-xs px-3 py-1 rounded cursor-pointer"
-          style={{
-            background: "color-mix(in srgb, var(--panel) 88%, black 6%)",
-          }}
-        >
-          Đổi bìa
+        <label className="absolute top-4 right-4 px-4 py-2 rounded-xl cursor-pointer backdrop-blur-md bg-white/90 dark:bg-black/90 border border-black/10 dark:border-white/10 text-sm font-semibold shadow-lg hover:scale-105 transition-transform duration-200">
+          📷 Đổi bìa
           <input
             ref={coverFileRef}
             type="file"
@@ -203,30 +217,47 @@ export default function Profile() {
         </label>
       </div>
       {/* AVATAR overlaps */}
-      <div className="relative pl-2 -mt-16 flex items-end gap-4">
-        <div className="w-32 h-32 rounded-full ring-4 ring-neutral-200 bg-white overflow-hidden flex items-center justify-center text-muted text-sm relative">
-          {avatar ? (
-            <img
-              src={avatar}
-              alt="avatar"
-              className="object-cover w-full h-full"
-            />
-          ) : remoteAvatar ? (
-            <img
-              src={remoteAvatar}
-              alt="avatar"
-              className="object-cover w-full h-full"
-            />
-          ) : (
-            "No Avatar"
-          )}
-          <label
-            className="absolute bottom-1 right-1 text-[10px] px-2 py-0.5 rounded cursor-pointer"
-            style={{
-              background: "color-mix(in srgb, var(--panel) 88%, black 6%)",
-            }}
-          >
-            Sửa
+      <div className="relative px-4 -mt-20 flex items-end gap-6">
+        <div className="relative group">
+          <div className="w-36 h-36 rounded-full ring-4 ring-white dark:ring-neutral-900 bg-white dark:bg-neutral-800 overflow-hidden flex items-center justify-center shadow-2xl relative border-4 border-white/50 dark:border-black/50">
+            {avatar ? (
+              <img
+                src={avatar}
+                alt="avatar"
+                className="object-cover w-full h-full"
+              />
+            ) : remoteAvatar ? (
+              <img
+                src={remoteAvatar}
+                alt="avatar"
+                className="object-cover w-full h-full"
+              />
+            ) : (
+              <div className="text-neutral-400 text-4xl font-bold">
+                {user.username?.[0]?.toUpperCase() || "?"}
+              </div>
+            )}
+          </div>
+          <label className="absolute bottom-2 right-2 w-10 h-10 rounded-full cursor-pointer backdrop-blur-md bg-white/90 dark:bg-black/90 border-2 border-white dark:border-black shadow-lg flex items-center justify-center hover:scale-110 transition-transform duration-200">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
             <input
               ref={avatarFileRef}
               type="file"
@@ -236,99 +267,202 @@ export default function Profile() {
             />
           </label>
         </div>
-        <div className="pb-4 flex-1 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-xl font-semibold">
-            {user.username}
-          </div>
-          <div className="text-neutral-400 text-sm">@{user.username}</div>
-          <div className="flex gap-4 text-xs text-neutral-400">
-            <span>
-              <span className="text-neutral-200 font-medium">
-                {user.followers?.length || 0}
-              </span>{" "}
-              người theo dõi
-            </span>
-            <span>
-              <span className="text-neutral-200 font-medium">
-                {user.following?.length || 0}
-              </span>{" "}
-              đang theo dõi
-            </span>
-            <span>
-              <span className="text-neutral-200 font-medium">
-                {user.friends?.length || 0}
-              </span>
-              {" / "}
-              <span className="text-neutral-300 font-medium">
-                {user.friendLimit || 0}
-              </span>{" "}
-              bạn bè
-            </span>
+        <div className="pb-4 flex-1 flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl font-bold">{user.username}</span>
             {user.isPro && (
-              <span className="flex items-center gap-2 text-xs px-2 py-0.5 rounded-full border border-black/20 dark:border-white/20">
+              <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border-2 border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 font-bold backdrop-blur-sm">
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
                 <span>PRO</span>
-                {proExpiryStr && (
-                  <span className="text-neutral-400">
-                    (hết hạn: {proExpiryStr})
-                  </span>
-                )}
               </span>
             )}
           </div>
+          <div className="text-neutral-500 text-sm font-medium">
+            @{user.username}
+          </div>
+
+          {/* Stats Cards */}
+          <div className="flex flex-wrap gap-3 mt-2">
+            <div className="px-4 py-2 rounded-xl bg-white/50 dark:bg-black/50 border border-black/10 dark:border-white/10 backdrop-blur-sm">
+              <div className="text-xs text-neutral-500 font-medium">
+                Người theo dõi
+              </div>
+              <div className="text-lg font-bold">
+                {user.followers?.length || 0}
+              </div>
+            </div>
+            <div className="px-4 py-2 rounded-xl bg-white/50 dark:bg-black/50 border border-black/10 dark:border-white/10 backdrop-blur-sm">
+              <div className="text-xs text-neutral-500 font-medium">
+                Đang theo dõi
+              </div>
+              <div className="text-lg font-bold">
+                {user.following?.length || 0}
+              </div>
+            </div>
+            <div className="px-4 py-2 rounded-xl bg-white/50 dark:bg-black/50 border border-black/10 dark:border-white/10 backdrop-blur-sm">
+              <div className="text-xs text-neutral-500 font-medium">Bạn bè</div>
+              <div className="text-lg font-bold">
+                {user.friends?.length || 0}
+                <span className="text-sm text-neutral-400 font-normal">
+                  {" "}
+                  / {user.friendLimit || 0}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {user.isPro && proExpiryStr && (
+            <div className="text-xs text-neutral-500 font-medium mt-2">
+              🎯 Pro hết hạn: {proExpiryStr}
+            </div>
+          )}
         </div>
       </div>
       {/* EDIT FIELDS */}
-      <div className="bg-transparent border border-black/10 dark:border-white/10 rounded-2xl p-5 space-y-5 card">
-        <div className="grid md:grid-cols-2 gap-5">
-          <div className="space-y-2">
-            <label className="text-xs uppercase tracking-wide text-neutral-400">
+      <div className="bg-white/30 dark:bg-black/30 border-2 border-black/10 dark:border-white/10 rounded-3xl p-6 space-y-6 card backdrop-blur-sm shadow-lg">
+        <h3 className="text-lg font-bold flex items-center gap-2">
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+          Chỉnh sửa hồ sơ
+        </h3>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <label className="text-xs uppercase tracking-wide text-neutral-600 dark:text-neutral-400 font-bold flex items-center gap-2">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
               Username
             </label>
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full text-sm rounded-2xl bg-transparent border border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 px-3 py-2 outline-none"
+              className="w-full text-sm rounded-xl bg-white/50 dark:bg-black/50 border-2 border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 focus:border-transparent px-4 py-3 outline-none font-medium transition-all duration-200"
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-xs uppercase tracking-wide text-neutral-400">
+          <div className="space-y-3">
+            <label className="text-xs uppercase tracking-wide text-neutral-600 dark:text-neutral-400 font-bold flex items-center gap-2">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                />
+              </svg>
               Website
             </label>
             <input
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://..."
-              className="w-full text-sm rounded-2xl bg-transparent border border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 px-3 py-2 outline-none"
+              className="w-full text-sm rounded-xl bg-white/50 dark:bg-black/50 border-2 border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 focus:border-transparent px-4 py-3 outline-none font-medium transition-all duration-200"
             />
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-xs uppercase tracking-wide text-neutral-400">
+          <div className="space-y-3 md:col-span-2">
+            <label className="text-xs uppercase tracking-wide text-neutral-600 dark:text-neutral-400 font-bold flex items-center gap-2">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                />
+              </svg>
               Bio
             </label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              rows={3}
-              className="w-full resize-none text-sm rounded-2xl bg-transparent border border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 px-3 py-2 outline-none"
-              placeholder="Giới thiệu ngắn..."
+              rows={4}
+              className="w-full resize-none text-sm rounded-xl bg-white/50 dark:bg-black/50 border-2 border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 focus:border-transparent px-4 py-3 outline-none font-medium transition-all duration-200"
+              placeholder="Giới thiệu ngắn về bạn..."
             />
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between pt-4">
           <button
             disabled={saving}
             onClick={saveProfile}
-            className="px-5 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 text-sm font-medium"
+            className="px-8 py-3.5 rounded-xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 text-sm font-bold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-2"
           >
-            {saving ? "Đang lưu..." : "Lưu"}
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            {saving ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
-          {msg && <div className="text-xs text-neutral-500">{msg}</div>}
+          {msg && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
+              <svg
+                className="w-4 h-4 text-green-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="text-sm text-green-600 dark:text-green-400 font-semibold">
+                {msg}
+              </span>
+            </div>
+          )}
         </div>
         {website && (
-          <div className="text-xs text-neutral-400">
-            Website:{" "}
+          <div className="text-xs text-neutral-400 font-medium">
+            <span className="font-bold">Website:</span>{" "}
             <a
-              className="text-black dark:text-white hover:underline"
+              className="text-black dark:text-white hover:underline font-semibold"
               target="_blank"
               rel="noreferrer"
               href={website}
@@ -338,26 +472,30 @@ export default function Profile() {
           </div>
         )}
         {bio && (
-          <div className="text-sm text-neutral-300 whitespace-pre-wrap">
+          <div className="text-sm text-neutral-300 whitespace-pre-wrap font-medium">
             {bio}
           </div>
         )}
       </div>
       {/* TABS */}
-      <div className="border-b border-black/10 dark:border-white/10 flex gap-8 px-2 text-sm">
+      <div className="border-b border-black/10 dark:border-white/10 flex gap-2 px-2">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`py-3 relative ${
+            className={`px-6 py-3.5 relative font-bold text-sm flex items-center gap-2 rounded-t-xl transition-all duration-200 ${
               activeTab === t.key
-                ? "text-white"
-                : "text-neutral-500 hover:text-neutral-300"
+                ? "text-black dark:text-white bg-black/5 dark:bg-white/5"
+                : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5"
             }`}
           >
+            {t.key === "threads" && "📝"}
+            {t.key === "replies" && "💬"}
+            {t.key === "media" && "📁"}
+            {t.key === "reposts" && "🔄"}
             {t.label}
             {activeTab === t.key && (
-              <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-black dark:bg-white rounded-full" />
+              <span className="absolute left-0 right-0 -bottom-px h-1 bg-black dark:bg-white rounded-t" />
             )}
           </button>
         ))}
@@ -368,36 +506,61 @@ export default function Profile() {
           (threads.length ? (
             threads.map((t) => <ThreadItem key={t._id} thread={t} />)
           ) : (
-            <div className="text-sm text-neutral-500">Chưa có thread</div>
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-4">
+                <span className="text-4xl">📝</span>
+              </div>
+              <div className="text-base text-neutral-600 dark:text-neutral-400 font-bold">
+                Chưa có thread
+              </div>
+              <div className="text-sm text-neutral-500 dark:text-neutral-500 font-medium mt-1">
+                Hãy chia sẻ suy nghĩ của bạn
+              </div>
+            </div>
           ))}
         {activeTab === "media" &&
           (mediaThreads.length ? (
             mediaThreads.map((t) => <ThreadItem key={t._id} thread={t} />)
           ) : (
-            <div className="text-sm text-neutral-500">Không có media</div>
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-4">
+                <span className="text-4xl">📁</span>
+              </div>
+              <div className="text-base text-neutral-600 dark:text-neutral-400 font-bold">
+                Không có media
+              </div>
+              <div className="text-sm text-neutral-500 dark:text-neutral-500 font-medium mt-1">
+                Chưa có hình ảnh hoặc video nào
+              </div>
+            </div>
           ))}
         {activeTab === "replies" &&
           (comments.length ? (
             <div className="space-y-4">
               {comments.map((comment) => (
-                <div key={comment._id} className="card p-4 space-y-3">
+                <div
+                  key={comment._id}
+                  className="card p-5 space-y-3 rounded-2xl bg-white/50 dark:bg-black/50 border-2 border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition-all duration-200"
+                >
                   {/* Comment Header */}
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold flex-shrink-0 ring-2 ring-black/10 dark:ring-white/10">
                       {comment.author?.username?.[0]?.toUpperCase() || "?"}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold">
+                        <span className="font-bold">
                           {comment.author?.username || "Unknown"}
                         </span>
                         {comment.author?.isPro && (
-                          <span className="text-xs px-2 py-0.5 rounded border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5">
+                          <span className="text-xs px-2 py-0.5 rounded-md border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 font-bold">
                             PRO
                           </span>
                         )}
-                        <span className="text-xs text-gray-500">•</span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 font-bold">
+                          •
+                        </span>
+                        <span className="text-xs text-gray-500 font-semibold">
                           {new Date(comment.createdAt).toLocaleString("vi-VN")}
                         </span>
                       </div>
@@ -406,8 +569,8 @@ export default function Profile() {
 
                   {/* Original Thread Context */}
                   {comment.threadId && (
-                    <div className="ml-13 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
-                      <div className="text-xs text-gray-500 mb-1 flex items-center gap-2">
+                    <div className="ml-13 pl-4 border-l-2 border-black/20 dark:border-white/20 rounded-l">
+                      <div className="text-xs text-neutral-600 dark:text-neutral-400 mb-1 flex items-center gap-2 font-bold">
                         <svg
                           width="14"
                           height="14"
@@ -420,12 +583,12 @@ export default function Profile() {
                         </svg>
                         <span>
                           Trả lời bài viết của{" "}
-                          <span className="font-medium">
+                          <span className="font-extrabold">
                             {comment.threadId.author?.username || "Unknown"}
                           </span>
                         </span>
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
+                      <div className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-2 mb-2 font-semibold">
                         {comment.threadId.content}
                       </div>
                     </div>
@@ -433,15 +596,15 @@ export default function Profile() {
 
                   {/* Comment Content */}
                   <div className="ml-13">
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
-                      <div className="text-sm whitespace-pre-wrap break-words">
+                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/10 dark:border-white/10">
+                      <div className="text-sm whitespace-pre-wrap break-words font-medium">
                         {comment.content}
                       </div>
 
                       {/* Comment Media */}
                       {comment.media && comment.media.length > 0 && (
                         <div
-                          className="mt-2 grid gap-2"
+                          className="mt-3 grid gap-2"
                           style={{
                             gridTemplateColumns:
                               comment.media.length === 1
@@ -450,7 +613,10 @@ export default function Profile() {
                           }}
                         >
                           {comment.media.map((media, idx) => (
-                            <div key={idx} className="rounded overflow-hidden">
+                            <div
+                              key={idx}
+                              className="rounded-xl overflow-hidden border-2 border-black/10 dark:border-white/10"
+                            >
                               {media.type === "image" && (
                                 <img
                                   src={`${import.meta.env.VITE_API_URL}/media/${
@@ -476,8 +642,8 @@ export default function Profile() {
                     </div>
 
                     {/* Comment Stats */}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                      <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-4 mt-3 text-xs text-neutral-600 dark:text-neutral-400">
+                      <div className="flex items-center gap-1.5 font-bold">
                         <svg
                           width="16"
                           height="16"
@@ -495,9 +661,19 @@ export default function Profile() {
                       {comment.threadId && (
                         <a
                           href={`/thread/${comment.threadId._id}`}
-                          className="underline hover:opacity-80 transition-colors"
+                          className="flex items-center gap-1 underline hover:opacity-80 transition-colors font-bold"
                         >
-                          → Xem bài viết gốc
+                          <span>Xem bài viết gốc</span>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+                          </svg>
                         </a>
                       )}
                     </div>
@@ -506,15 +682,23 @@ export default function Profile() {
               ))}
             </div>
           ) : (
-            <div className="text-sm text-neutral-500 text-center py-8">
-              Bạn chưa có phản hồi nào
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-4">
+                <span className="text-4xl">💬</span>
+              </div>
+              <div className="text-base text-neutral-600 dark:text-neutral-400 font-bold">
+                Bạn chưa có phản hồi nào
+              </div>
+              <div className="text-sm text-neutral-500 dark:text-neutral-500 font-medium mt-1">
+                Các bình luận của bạn sẽ hiển thị ở đây
+              </div>
             </div>
           ))}
         {activeTab === "reposts" &&
           (reposts.length ? (
             reposts.map((t) => (
-              <div key={t._id} className="space-y-2">
-                <div className="text-xs text-neutral-400 flex items-center gap-2">
+              <div key={t._id} className="space-y-3">
+                <div className="text-xs text-neutral-600 dark:text-neutral-400 flex items-center gap-2 font-bold px-2">
                   <svg
                     width="14"
                     height="14"
@@ -530,13 +714,23 @@ export default function Profile() {
                     <polyline points="7 23 3 19 7 15"></polyline>
                     <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
                   </svg>
-                  <span>Bạn đã đăng lại</span>
+                  <span>🔄 Bạn đã đăng lại</span>
                 </div>
                 <ThreadItem thread={t} />
               </div>
             ))
           ) : (
-            <div className="text-sm text-neutral-500">Chưa có bài đăng lại</div>
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-4">
+                <span className="text-4xl">🔄</span>
+              </div>
+              <div className="text-base text-neutral-600 dark:text-neutral-400 font-bold">
+                Bạn chưa đăng lại bài viết nào
+              </div>
+              <div className="text-sm text-neutral-500 dark:text-neutral-500 font-medium mt-1">
+                Các bài đăng lại sẽ hiển thị ở đây
+              </div>
+            </div>
           ))}
       </div>
     </div>
