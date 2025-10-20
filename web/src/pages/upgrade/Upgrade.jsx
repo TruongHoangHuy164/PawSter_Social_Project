@@ -73,7 +73,7 @@ export default function Upgrade(){
             <button
               key={p.key}
               onClick={()=>setSelected(p.key)}
-              className={`relative text-left rounded-lg border p-4 transition-all ${selected===p.key ? 'border-violet-500 ring-2 ring-violet-200' : 'border-neutral-200 hover:border-neutral-300'}`}
+              className={`relative text-left rounded-2xl border p-4 transition-all bg-white dark:bg-black ${selected===p.key ? 'border-black dark:border-white ring-2 ring-black/10 dark:ring-white/10' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'}`}
             >
               {p.badge && (
                 <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full shadow">{p.badge}</span>
@@ -83,9 +83,9 @@ export default function Upgrade(){
                   <div className="font-semibold text-lg">{p.label}</div>
                   <div className="text-xs text-neutral-500">{PLAN_META[p.key]?.desc}</div>
                 </div>
-                <div className="text-violet-600 font-semibold">{formatVND(p.amount)}</div>
+                <div className="text-black dark:text-white font-semibold">{formatVND(p.amount)}</div>
               </div>
-              {selected===p.key && <div className="mt-3 text-xs text-violet-600">Đã chọn</div>}
+              {selected===p.key && <div className="mt-3 text-xs text-black dark:text-white">Đã chọn</div>}
             </button>
           ))}
         </div>
@@ -95,7 +95,7 @@ export default function Upgrade(){
         <button
           onClick={pay}
           disabled={creating || !selected || user?.isPro}
-          className="px-5 py-2 rounded bg-gradient-to-r from-violet-600 to-violet-500 disabled:opacity-50 text-sm font-medium text-white"
+          className="px-5 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 text-sm font-medium"
         >
           {creating ? 'Đang tạo đơn MoMo…' : 'Thanh toán với MoMo'}
         </button>

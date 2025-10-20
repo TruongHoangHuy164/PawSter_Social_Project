@@ -85,13 +85,13 @@ export default function Payments() {
       <div className="space-y-6">
         {/* Enhanced Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="card p-4 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
+          <div className="card p-4 border-l-4 border-black/10 dark:border-white/10 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="text-sm text-gray-500 mb-1">
                   💰 Tổng doanh thu
                 </div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                <div className="text-2xl font-bold">
                   {formatCurrency(stats.summary.paid.amount)}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
@@ -102,13 +102,13 @@ export default function Payments() {
             </div>
           </div>
 
-          <div className="card p-4 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
+          <div className="card p-4 border-l-4 border-black/10 dark:border-white/10 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="text-sm text-green-500 mb-1">
+                <div className="text-sm muted mb-1">
                   ✅ Tỉ lệ thành công
                 </div>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold">
                   {successRate}%
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
@@ -119,13 +119,13 @@ export default function Payments() {
             </div>
           </div>
 
-          <div className="card p-4 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
+          <div className="card p-4 border-l-4 border-black/10 dark:border-white/10 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="text-sm text-purple-500 mb-1">
+                <div className="text-sm muted mb-1">
                   💳 Giao dịch TB
                 </div>
-                <div className="text-2xl font-bold text-purple-600">
+                <div className="text-2xl font-bold">
                   {formatCurrency(avgTransaction)}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
@@ -136,11 +136,11 @@ export default function Payments() {
             </div>
           </div>
 
-          <div className="card p-4 border-l-4 border-orange-500 hover:shadow-lg transition-shadow">
+          <div className="card p-4 border-l-4 border-black/10 dark:border-white/10 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="text-sm text-orange-500 mb-1">⚠️ Cần xử lý</div>
-                <div className="text-2xl font-bold text-orange-600">
+                <div className="text-sm muted mb-1">⚠️ Cần xử lý</div>
+                <div className="text-2xl font-bold">
                   {stats.summary.pending.count + stats.summary.failed.count}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
@@ -171,7 +171,7 @@ export default function Payments() {
             {/* Grid lines */}
             <div className="absolute left-20 right-0 top-0 bottom-8 flex flex-col justify-between">
               {[0, 1, 2, 3, 4].map((i) => (
-                <div key={i} className="border-t border-gray-200/50"></div>
+                <div key={i} className="border-t border-[var(--panel-border)]"></div>
               ))}
             </div>
 
@@ -185,32 +185,13 @@ export default function Payments() {
                 height: "calc(100% - 2rem)",
               }}
             >
-              <defs>
-                <linearGradient
-                  id="lineGradient"
-                  x1="0%"
-                  y1="0%"
-                  x2="0%"
-                  y2="100%"
-                >
-                  <stop
-                    offset="0%"
-                    stopColor="rgb(59, 130, 246)"
-                    stopOpacity="0.3"
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor="rgb(59, 130, 246)"
-                    stopOpacity="0.05"
-                  />
-                </linearGradient>
-              </defs>
+              {/* Removed blue gradient for monochrome style */}
 
               {stats.monthly.length > 1 && (
                 <>
                   {/* Area under line */}
                   <polygon
-                    fill="url(#lineGradient)"
+                    className="fill-current text-black/5 dark:text-white/5"
                     points={`0,100 ${stats.monthly
                       .map((month, i) => {
                         const x = (i / (stats.monthly.length - 1)) * 100;
@@ -223,7 +204,8 @@ export default function Payments() {
                   {/* Paid amount line */}
                   <polyline
                     fill="none"
-                    stroke="rgb(59, 130, 246)"
+                    stroke="currentColor"
+                    className="text-black dark:text-white"
                     strokeWidth="0.8"
                     vectorEffect="non-scaling-stroke"
                     points={stats.monthly
@@ -238,7 +220,8 @@ export default function Payments() {
                   {/* Total amount line (dashed) */}
                   <polyline
                     fill="none"
-                    stroke="rgb(168, 85, 247)"
+                    stroke="currentColor"
+                    className="text-black/40 dark:text-white/40"
                     strokeWidth="0.5"
                     strokeDasharray="2,2"
                     vectorEffect="non-scaling-stroke"
@@ -261,8 +244,7 @@ export default function Payments() {
                         cx={x}
                         cy={y}
                         r="1"
-                        fill="rgb(59, 130, 246)"
-                        className="cursor-pointer"
+                        className="fill-current text-black dark:text-white cursor-pointer"
                       />
                     );
                   })}
@@ -286,14 +268,11 @@ export default function Payments() {
           {/* Legend */}
           <div className="flex items-center justify-center gap-6 mt-4 text-xs">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-0.5 bg-blue-500"></div>
+              <div className="w-8 h-0.5 bg-black dark:bg-white"></div>
               <span>Đã thanh toán</span>
             </div>
             <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-0.5 bg-purple-500 opacity-50"
-                style={{ borderTop: "2px dashed" }}
-              ></div>
+              <div className="w-8 h-0.5 bg-black/40 dark:bg-white/40" style={{ borderTop: "2px dashed" }}></div>
               <span>Tổng giao dịch</span>
             </div>
           </div>
@@ -311,38 +290,7 @@ export default function Payments() {
               style={{ height: "300px" }}
             >
               <svg width="220" height="220" viewBox="0 0 220 220">
-                <defs>
-                  <linearGradient
-                    id="paidGradient"
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor="rgb(34, 197, 94)" />
-                    <stop offset="100%" stopColor="rgb(22, 163, 74)" />
-                  </linearGradient>
-                  <linearGradient
-                    id="pendingGradient"
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor="rgb(234, 179, 8)" />
-                    <stop offset="100%" stopColor="rgb(202, 138, 4)" />
-                  </linearGradient>
-                  <linearGradient
-                    id="failedGradient"
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor="rgb(239, 68, 68)" />
-                    <stop offset="100%" stopColor="rgb(220, 38, 38)" />
-                  </linearGradient>
-                </defs>
+                {/* Removed color gradients for monochrome style */}
 
                 {(() => {
                   const total = stats.summary.total.count;
@@ -380,8 +328,7 @@ export default function Payments() {
                       <path
                         key="paid"
                         d={arc.path}
-                        fill="url(#paidGradient)"
-                        className="hover:opacity-80 transition-opacity cursor-pointer"
+                        className="fill-current text-black/70 dark:text-white/70 hover:opacity-80 transition-opacity cursor-pointer"
                       />
                     );
                     currentAngle = arc.endAngle;
@@ -393,8 +340,7 @@ export default function Payments() {
                       <path
                         key="pending"
                         d={arc.path}
-                        fill="url(#pendingGradient)"
-                        className="hover:opacity-80 transition-opacity cursor-pointer"
+                        className="fill-current text-black/40 dark:text-white/40 hover:opacity-80 transition-opacity cursor-pointer"
                       />
                     );
                     currentAngle = arc.endAngle;
@@ -406,8 +352,7 @@ export default function Payments() {
                       <path
                         key="failed"
                         d={arc.path}
-                        fill="url(#failedGradient)"
-                        className="hover:opacity-80 transition-opacity cursor-pointer"
+                        className="fill-current text-black/20 dark:text-white/30 hover:opacity-80 transition-opacity cursor-pointer"
                       />
                     );
                   }
@@ -441,50 +386,50 @@ export default function Payments() {
             </div>
 
             {/* Pie Legend */}
-            <div className="space-y-2 mt-4">
-              <div className="flex items-center justify-between p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-gradient-to-br from-green-500 to-green-600"></div>
-                  <span className="text-sm">Thành công</span>
+              <div className="space-y-2 mt-4">
+                <div className="flex items-center justify-between p-2 rounded hover:bg-black/5 dark:hover:bg-white/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-black/70 dark:bg-white/70"></div>
+                    <span className="text-sm">Thành công</span>
+                  </div>
+                  <div className="text-sm font-medium">
+                    {stats.summary.paid.count} (
+                    {(
+                      (stats.summary.paid.count / stats.summary.total.count) *
+                      100
+                    ).toFixed(1)}
+                    %)
+                  </div>
                 </div>
-                <div className="text-sm font-medium">
-                  {stats.summary.paid.count} (
-                  {(
-                    (stats.summary.paid.count / stats.summary.total.count) *
-                    100
-                  ).toFixed(1)}
-                  %)
+                <div className="flex items-center justify-between p-2 rounded hover:bg-black/5 dark:hover:bg-white/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-black/40 dark:bg-white/40"></div>
+                    <span className="text-sm">Đang chờ</span>
+                  </div>
+                  <div className="text-sm font-medium">
+                    {stats.summary.pending.count} (
+                    {(
+                      (stats.summary.pending.count / stats.summary.total.count) *
+                      100
+                    ).toFixed(1)}
+                    %)
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded hover:bg-black/5 dark:hover:bg-white/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-black/20 dark:bg-white/30"></div>
+                    <span className="text-sm">Thất bại</span>
+                  </div>
+                  <div className="text-sm font-medium">
+                    {stats.summary.failed.count} (
+                    {(
+                      (stats.summary.failed.count / stats.summary.total.count) *
+                      100
+                    ).toFixed(1)}
+                    %)
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-gradient-to-br from-yellow-500 to-yellow-600"></div>
-                  <span className="text-sm">Đang chờ</span>
-                </div>
-                <div className="text-sm font-medium">
-                  {stats.summary.pending.count} (
-                  {(
-                    (stats.summary.pending.count / stats.summary.total.count) *
-                    100
-                  ).toFixed(1)}
-                  %)
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-gradient-to-br from-red-500 to-red-600"></div>
-                  <span className="text-sm">Thất bại</span>
-                </div>
-                <div className="text-sm font-medium">
-                  {stats.summary.failed.count} (
-                  {(
-                    (stats.summary.failed.count / stats.summary.total.count) *
-                    100
-                  ).toFixed(1)}
-                  %)
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Vertical Bar Chart - Modern Design */}
@@ -586,39 +531,29 @@ export default function Payments() {
                         {/* Failed bar (bottom) */}
                         {failedHeight > 0 && (
                           <div
-                            className="w-full bg-red-500/30 rounded-t transition-all duration-300 hover:bg-red-500/50"
+                            className="w-full bg-black/20 dark:bg-white/30 rounded-t transition-all duration-300 hover:bg-black/30 dark:hover:bg-white/40"
                             style={{ height: `${failedHeight}%` }}
                           ></div>
                         )}
                         {/* Pending bar (middle) */}
                         {pendingHeight > 0 && (
                           <div
-                            className="w-full bg-yellow-500/30 transition-all duration-300 hover:bg-yellow-500/50"
+                            className="w-full bg-black/30 dark:bg-white/40 transition-all duration-300 hover:bg-black/40 dark:hover:bg-white/50"
                             style={{ height: `${pendingHeight}%` }}
                           ></div>
                         )}
                         {/* Paid bar (top) */}
                         {paidHeight > 0 && (
                           <div
-                            className="w-full rounded-t transition-all duration-300 hover:shadow-lg"
-                            style={{
-                              height: `${paidHeight}%`,
-                              background:
-                                "linear-gradient(180deg, var(--accent), var(--pet-accent))",
-                            }}
+                            className="w-full rounded-t transition-all duration-300 hover:shadow-lg bg-black/70 dark:bg-white/70"
+                            style={{ height: `${paidHeight}%` }}
                           ></div>
                         )}
 
                         {/* Growth indicator */}
                         {month.growth != 0 && month.paid.amount > 0 && (
                           <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold whitespace-nowrap">
-                            <span
-                              className={
-                                month.growth > 0
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }
-                            >
+                            <span className="text-black/70 dark:text-white/70">
                               {month.growth > 0 ? "↑" : "↓"}{" "}
                               {Math.abs(month.growth)}%
                             </span>
@@ -634,7 +569,7 @@ export default function Payments() {
               <div className="absolute left-24 right-0 bottom-0 flex justify-between gap-2 px-4">
                 {stats.monthly.map((month) => (
                   <div key={month.month} className="flex-1 text-center">
-                    <div className="text-xs text-gray-600 font-medium">
+                    <div className="text-xs muted font-medium">
                       T{month.month}
                     </div>
                   </div>
@@ -645,15 +580,15 @@ export default function Payments() {
             {/* Bar Chart Legend */}
             <div className="flex items-center justify-center gap-4 text-xs mt-4">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-gradient-to-r from-[var(--accent)] to-[var(--pet-accent)]"></div>
+                <div className="w-3 h-3 rounded bg-black/70 dark:bg-white/70"></div>
                 <span>Thành công</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-yellow-500/30"></div>
+                <div className="w-3 h-3 rounded bg-black/30 dark:bg-white/40"></div>
                 <span>Đang chờ</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-red-500/30"></div>
+                <div className="w-3 h-3 rounded bg-black/20 dark:bg-white/30"></div>
                 <span>Thất bại</span>
               </div>
             </div>
@@ -682,16 +617,16 @@ export default function Payments() {
                   className="border-t border-[var(--panel-border)] hover:bg-[var(--card-hover)]"
                 >
                   <td className="p-2">{getMonthName(month.month)}</td>
-                  <td className="p-2 text-right text-green-600">
+                  <td className="p-2 text-right">
                     {month.paid.count}
                   </td>
                   <td className="p-2 text-right font-medium">
                     {formatCurrency(month.paid.amount)}
                   </td>
-                  <td className="p-2 text-right text-yellow-600">
+                  <td className="p-2 text-right">
                     {month.pending.count}
                   </td>
-                  <td className="p-2 text-right text-red-600">
+                  <td className="p-2 text-right">
                     {month.failed.count}
                   </td>
                   <td className="p-2 text-right font-medium">
@@ -699,13 +634,13 @@ export default function Payments() {
                   </td>
                   <td className="p-2 text-right">
                     {month.growth > 0 && (
-                      <span className="text-green-600">+{month.growth}%</span>
+                      <span className="text-black/70 dark:text-white/70">+{month.growth}%</span>
                     )}
                     {month.growth < 0 && (
-                      <span className="text-red-600">{month.growth}%</span>
+                      <span className="text-black/70 dark:text-white/70">{month.growth}%</span>
                     )}
                     {month.growth == 0 && (
-                      <span className="text-gray-500">—</span>
+                      <span className="muted">—</span>
                     )}
                   </td>
                 </tr>
@@ -741,20 +676,20 @@ export default function Payments() {
           )}
           <button
             onClick={() => setView("list")}
-            className={`px-4 py-2 rounded transition-colors ${
+            className={`px-4 py-2 rounded transition-colors border ${
               view === "list"
-                ? "bg-gradient-to-r from-[var(--accent)] to-[var(--pet-accent)] text-white"
-                : "bg-[var(--panel)] hover:bg-[var(--card-hover)]"
+                ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white"
+                : "bg-[var(--panel)] hover:bg-[var(--card-hover)] border-[var(--panel-border)]"
             }`}
           >
             Danh sách
           </button>
           <button
             onClick={() => setView("stats")}
-            className={`px-4 py-2 rounded transition-colors ${
+            className={`px-4 py-2 rounded transition-colors border ${
               view === "stats"
-                ? "bg-gradient-to-r from-[var(--accent)] to-[var(--pet-accent)] text-white"
-                : "bg-[var(--panel)] hover:bg-[var(--card-hover)]"
+                ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white"
+                : "bg-[var(--panel)] hover:bg-[var(--card-hover)] border-[var(--panel-border)]"
             }`}
           >
             Thống kê
@@ -790,12 +725,12 @@ export default function Payments() {
                   <td className="p-2">{formatCurrency(p.amount)}</td>
                   <td className="p-2">
                     <span
-                      className={`px-2 py-1 rounded text-xs ${
+                      className={`px-2 py-1 rounded text-xs border ${
                         p.status === "paid"
-                          ? "bg-green-500/20 text-green-600"
+                          ? "border-black/30 dark:border-white/40"
                           : p.status === "pending"
-                          ? "bg-yellow-500/20 text-yellow-600"
-                          : "bg-red-500/20 text-red-600"
+                          ? "border-black/20 dark:border-white/30"
+                          : "border-black/15 dark:border-white/25"
                       }`}
                     >
                       {p.status === "paid"

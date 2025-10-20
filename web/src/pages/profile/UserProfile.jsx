@@ -94,10 +94,7 @@ export default function UserProfile() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div
-          className="animate-spin rounded-full h-12 w-12 border-b-2"
-          style={{ borderColor: "var(--accent)" }}
-        ></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-black/20 dark:border-white/20 border-t-transparent"></div>
       </div>
     );
   }
@@ -116,7 +113,7 @@ export default function UserProfile() {
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
       {/* Cover Image */}
-      <div className="relative h-44 rounded-xl overflow-hidden border border-white/6 bg-gradient-to-b from-purple-900/30 to-pink-900/30">
+  <div className="relative h-44 rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-transparent">
         {user.coverUrl ? (
           <img
             src={user.coverUrl}
@@ -153,7 +150,7 @@ export default function UserProfile() {
                 <div className="flex items-center gap-2 text-xl font-semibold">
                   {user.username}
                   {user.isPro && (
-                    <span className="text-violet-400 text-sm">PRO</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full border border-black/20 dark:border-white/20">PRO</span>
                   )}
                 </div>
                 <div className="text-neutral-400 text-sm">@{user.username}</div>
@@ -165,8 +162,8 @@ export default function UserProfile() {
                   onClick={handleFollow}
                   className={`px-6 py-2 rounded-lg font-semibold transition ${
                     isFollowing
-                      ? "bg-gray-600 hover:bg-gray-700 text-white"
-                      : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                      ? "bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
+                      : "bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
                   }`}
                 >
                   {isFollowing ? "Đang theo dõi" : "Theo dõi"}
@@ -220,7 +217,7 @@ export default function UserProfile() {
               <div className="text-xs text-neutral-400">
                 Website:{" "}
                 <a
-                  className="text-violet-400 hover:underline"
+                  className="text-black dark:text-white hover:underline"
                   target="_blank"
                   rel="noreferrer"
                   href={user.website}
@@ -234,7 +231,7 @@ export default function UserProfile() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-white/6 flex gap-8 px-2 text-sm">
+  <div className="border-b border-black/10 dark:border-white/10 flex gap-8 px-2 text-sm">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -246,8 +243,8 @@ export default function UserProfile() {
             }`}
           >
             {t.label}
-            {activeTab === t.key && (
-              <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-violet-500 rounded-full" />
+              {activeTab === t.key && (
+              <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-black dark:bg-white rounded-full" />
             )}
           </button>
         ))}

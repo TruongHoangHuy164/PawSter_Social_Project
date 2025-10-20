@@ -426,7 +426,7 @@ export default function ThreadItem({ thread, onDelete }) {
   );
 
   return (
-    <div className="p-5 rounded-xl space-y-3 lux-card pop hover:shadow-lg transition-shadow duration-200">
+    <div className="p-5 rounded-2xl space-y-3 border border-black/10 dark:border-white/10 bg-white dark:bg-black pop hover:shadow-md transition-shadow duration-200">
       {/* Header */}
       <div className="flex items-center gap-3 text-sm">
         <div className="flex items-center gap-2">
@@ -439,8 +439,7 @@ export default function ThreadItem({ thread, onDelete }) {
           </div>
           <span
             onClick={handleAvatarClick}
-            className="font-semibold text-base cursor-pointer hover:underline"
-            style={{ color: "#000" }}
+            className="font-semibold text-base cursor-pointer hover:underline text-black dark:text-white"
           >
             {thread.author?.username || "Unknown"}
           </span>
@@ -450,14 +449,7 @@ export default function ThreadItem({ thread, onDelete }) {
           {!mine && thread.author && (
             <button
               onClick={handleFollowToggle}
-              className="text-xs px-3 py-1 rounded-full font-medium transition-all duration-200"
-              style={{
-                background: isFollowing
-                  ? "rgba(155,99,114,0.1)"
-                  : "linear-gradient(135deg, var(--accent), var(--pet-accent))",
-                color: isFollowing ? "#9b6372" : "#fff",
-                border: isFollowing ? "1px solid rgba(155,99,114,0.3)" : "none",
-              }}
+              className={`text-xs px-3 py-1 rounded-full font-medium transition-all duration-200 border ${isFollowing ? 'text-neutral-600 dark:text-neutral-300 bg-transparent border-black/20 dark:border-white/20' : 'text-white bg-black dark:text-black dark:bg-white border-transparent'}`}
             >
               {isFollowing ? "Đang theo dõi" : "Theo dõi"}
             </button>
@@ -469,14 +461,7 @@ export default function ThreadItem({ thread, onDelete }) {
         {mine && (
           <button
             onClick={del}
-            className="ml-auto text-xs px-3 py-1 rounded-md transition-colors duration-150"
-            style={{ color: "#dc2626", background: "rgba(220, 38, 38, 0.08)" }}
-            onMouseEnter={(e) =>
-              (e.target.style.background = "rgba(220, 38, 38, 0.15)")
-            }
-            onMouseLeave={(e) =>
-              (e.target.style.background = "rgba(220, 38, 38, 0.08)")
-            }
+            className="ml-auto text-xs px-3 py-1 rounded-md transition-colors duration-150 text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/20"
           >
             Xóa
           </button>
@@ -485,8 +470,7 @@ export default function ThreadItem({ thread, onDelete }) {
 
       {/* Content */}
       <div
-        className="text-sm leading-relaxed whitespace-pre-wrap"
-        style={{ color: "#2b1b22" }}
+        className="text-sm leading-relaxed whitespace-pre-wrap text-neutral-800 dark:text-neutral-200"
       >
         {thread.content}
       </div>
@@ -500,12 +484,7 @@ export default function ThreadItem({ thread, onDelete }) {
                 {canScrollLeft && (
                   <button
                     type="button"
-                    className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 items-center justify-center rounded-full shadow-xl transition-all duration-200 hover:scale-110"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, var(--accent), var(--pet-accent))",
-                      color: "white",
-                    }}
+                    className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 items-center justify-center rounded-full shadow-md transition-all duration-200 hover:scale-110 bg-black text-white dark:bg-white dark:text-black"
                     onClick={() => scrollByPage(-1)}
                     aria-label="Trượt trái"
                   >
@@ -526,12 +505,7 @@ export default function ThreadItem({ thread, onDelete }) {
                 {canScrollRight && (
                   <button
                     type="button"
-                    className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 items-center justify-center rounded-full shadow-xl transition-all duration-200 hover:scale-110"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, var(--accent), var(--pet-accent))",
-                      color: "white",
-                    }}
+                    className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 items-center justify-center rounded-full shadow-md transition-all duration-200 hover:scale-110 bg-black text-white dark:bg-white dark:text-black"
                     onClick={() => scrollByPage(1)}
                     aria-label="Trượt phải"
                   >
@@ -584,11 +558,7 @@ export default function ThreadItem({ thread, onDelete }) {
                     >
                       {!url && !error && (
                         <div
-                          className="flex items-center justify-center rounded-lg w-full h-full text-xs muted"
-                          style={{
-                            background: "rgba(155, 99, 114, 0.08)",
-                            border: "1px solid rgba(155, 99, 114, 0.15)",
-                          }}
+                          className="flex items-center justify-center rounded-xl w-full h-full text-xs text-neutral-500 border border-black/10 dark:border-white/10 bg-white dark:bg-black"
                         >
                           <div className="flex flex-col items-center gap-2">
                             <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full"></div>
@@ -598,12 +568,7 @@ export default function ThreadItem({ thread, onDelete }) {
                       )}
                       {error && (
                         <div
-                          className="rounded-lg text-xs p-3 w-full h-full flex items-center justify-center text-center"
-                          style={{
-                            background: "rgba(220, 38, 38, 0.08)",
-                            border: "1px solid rgba(220, 38, 38, 0.2)",
-                            color: "#dc2626",
-                          }}
+                          className="rounded-xl text-xs p-3 w-full h-full flex items-center justify-center text-center text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/20 border border-red-200/50 dark:border-red-400/20"
                         >
                           Lỗi tải ảnh
                         </div>
@@ -612,11 +577,7 @@ export default function ThreadItem({ thread, onDelete }) {
                         <button
                           type="button"
                           onClick={() => openLightbox(i)}
-                          className="block group w-full h-full rounded-lg overflow-hidden transition-transform duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2"
-                          style={{
-                            border: "1px solid rgba(43, 27, 34, 0.1)",
-                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
-                          }}
+                          className="block group w-full h-full rounded-xl overflow-hidden transition-transform duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 border border-black/10 dark:border-white/10 shadow-sm"
                           aria-label="Xem ảnh lớn"
                         >
                           <img
@@ -658,13 +619,12 @@ export default function ThreadItem({ thread, onDelete }) {
                       ref={(el) => {
                         if (el) mediaRefs.current[i] = el;
                       }}
-                      className={`relative group w-[180px] h-[240px] rounded-lg overflow-hidden flex items-center justify-center snap-start flex-shrink-0 ${
+                      className={`relative group w-[180px] h-[240px] rounded-xl overflow-hidden flex items-center justify-center snap-start flex-shrink-0 ${
                         dragging ? "pointer-events-none" : ""
                       }`}
                       style={{
-                        background: "rgba(155, 99, 114, 0.05)",
-                        border: "1px solid rgba(43, 27, 34, 0.1)",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+                        background: "transparent",
+                        border: "1px solid rgba(0,0,0,0.1)",
                       }}
                     >
                       {!url && !error && !loading && (
@@ -673,15 +633,14 @@ export default function ThreadItem({ thread, onDelete }) {
                         </div>
                       )}
                       {loading && (
-                        <div className="flex flex-col items-center gap-2 muted text-xs">
+                        <div className="flex flex-col items-center gap-2 text-neutral-500 text-xs">
                           <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full"></div>
                           <span>Đang tải...</span>
                         </div>
                       )}
                       {error && (
                         <div
-                          className="text-xs p-3 text-center"
-                          style={{ color: "#dc2626" }}
+                          className="text-xs p-3 text-center text-red-600 dark:text-red-400"
                         >
                           Lỗi video
                         </div>
@@ -706,13 +665,12 @@ export default function ThreadItem({ thread, onDelete }) {
                       ref={(el) => {
                         if (el) mediaRefs.current[i] = el;
                       }}
-                      className={`w-[180px] h-[80px] p-3 rounded-lg flex items-center justify-center gap-2 snap-start flex-shrink-0 ${
+                      className={`w-[180px] h-[80px] p-3 rounded-xl flex items-center justify-center gap-2 snap-start flex-shrink-0 ${
                         dragging ? "pointer-events-none" : ""
                       }`}
                       style={{
-                        background: "rgba(155, 99, 114, 0.05)",
-                        border: "1px solid rgba(43, 27, 34, 0.1)",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+                        background: "transparent",
+                        border: "1px solid rgba(0,0,0,0.1)",
                       }}
                     >
                       {!url && !error && !loading && (
@@ -725,7 +683,7 @@ export default function ThreadItem({ thread, onDelete }) {
                         </div>
                       )}
                       {error && (
-                        <span className="text-xs" style={{ color: "#dc2626" }}>
+                        <span className="text-xs text-red-600 dark:text-red-400">
                           Lỗi audio
                         </span>
                       )}
@@ -737,12 +695,12 @@ export default function ThreadItem({ thread, onDelete }) {
                 return (
                   <div
                     key={i}
-                    className={`w-[180px] h-[240px] p-3 rounded-lg text-xs break-all flex items-center justify-center text-center snap-start flex-shrink-0 ${
+                    className={`w-[180px] h-[240px] p-3 rounded-xl text-xs break-all flex items-center justify-center text-center snap-start flex-shrink-0 ${
                       dragging ? "pointer-events-none" : ""
                     }`}
                     style={{
-                      background: "rgba(155, 99, 114, 0.05)",
-                      border: "1px solid rgba(43, 27, 34, 0.1)",
+                      background: "transparent",
+                      border: "1px solid rgba(0,0,0,0.1)",
                     }}
                   >
                     {m.key}
@@ -766,15 +724,7 @@ export default function ThreadItem({ thread, onDelete }) {
                       });
                     }
                   }}
-                  className="transition-all duration-200 rounded-full"
-                  style={{
-                    width: currentPage === idx ? "24px" : "8px",
-                    height: "8px",
-                    background:
-                      currentPage === idx
-                        ? "linear-gradient(90deg, var(--accent), var(--pet-accent))"
-                        : "rgba(155, 99, 114, 0.25)",
-                  }}
+                  className={`transition-all duration-200 rounded-full ${currentPage===idx ? 'bg-black dark:bg-white w-6 h-2' : 'bg-neutral-400/40 w-2 h-2'}`}
                   aria-label={`Trang ${idx + 1}`}
                 />
               ))}
@@ -793,16 +743,7 @@ export default function ThreadItem({ thread, onDelete }) {
           aria-label={liked ? "Bỏ thích" : "Thích"}
         >
           <span
-            className="h-8 w-8 rounded-full flex items-center justify-center shadow-sm"
-            style={{
-              background: liked
-                ? "linear-gradient(135deg, var(--accent), var(--pet-accent))"
-                : "rgba(155,99,114,0.08)",
-              color: liked ? "#fff" : "#9b6372",
-              border: liked
-                ? "1px solid rgba(43,27,34,0.15)"
-                : "1px solid rgba(155,99,114,0.2)",
-            }}
+            className={`h-8 w-8 rounded-full flex items-center justify-center shadow-sm border ${liked ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'bg-transparent text-neutral-500 border-black/15 dark:border-white/15'}`}
           >
             <svg
               width="18"
@@ -817,7 +758,7 @@ export default function ThreadItem({ thread, onDelete }) {
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"></path>
             </svg>
           </span>
-          <span className="text-xs" style={{ color: "#6b4a57" }}>
+          <span className="text-xs text-neutral-600 dark:text-neutral-300">
             {likesCount}
           </span>
         </button>
@@ -831,16 +772,7 @@ export default function ThreadItem({ thread, onDelete }) {
           aria-controls={`comments-${thread._id}`}
         >
           <span
-            className="h-8 w-8 rounded-full flex items-center justify-center shadow-sm"
-            style={{
-              background: showComments
-                ? "linear-gradient(135deg, var(--accent), var(--pet-accent))"
-                : "rgba(155,99,114,0.08)",
-              color: showComments ? "#fff" : "#9b6372",
-              border: showComments
-                ? "1px solid rgba(43,27,34,0.15)"
-                : "1px solid rgba(155,99,114,0.2)",
-            }}
+            className={`h-8 w-8 rounded-full flex items-center justify-center shadow-sm border ${showComments ? 'bg-black text-white dark:bg.white dark:text-black border-transparent' : 'bg-transparent text-neutral-500 border-black/15 dark:border-white/15'}`}
           >
             <svg
               width="18"
@@ -857,7 +789,7 @@ export default function ThreadItem({ thread, onDelete }) {
               <path d="M17 12H7"></path>
             </svg>
           </span>
-          <span className="text-xs" style={{ color: "#6b4a57" }}>
+          <span className="text-xs text-neutral-600 dark:text-neutral-300">
             {commentCount}
           </span>
         </button>
@@ -870,16 +802,7 @@ export default function ThreadItem({ thread, onDelete }) {
           aria-label={reposted ? "Hủy đăng lại" : "Đăng lại"}
         >
           <span
-            className="h-8 w-8 rounded-full flex items-center justify-center shadow-sm"
-            style={{
-              background: reposted
-                ? "linear-gradient(135deg, var(--accent), var(--pet-accent))"
-                : "rgba(155,99,114,0.08)",
-              color: reposted ? "#fff" : "#9b6372",
-              border: reposted
-                ? "1px solid rgba(43,27,34,0.15)"
-                : "1px solid rgba(155,99,114,0.2)",
-            }}
+            className={`h-8 w-8 rounded-full flex items-center justify-center shadow-sm border ${reposted ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'bg-transparent text-neutral-500 border-black/15 dark:border-white/15'}`}
           >
             <svg
               width="18"
@@ -897,7 +820,7 @@ export default function ThreadItem({ thread, onDelete }) {
               <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
             </svg>
           </span>
-          <span className="text-xs" style={{ color: "#6b4a57" }}>
+          <span className="text-xs text-neutral-600 dark:text-neutral-300">
             {repostsCount}
           </span>
         </button>
@@ -908,7 +831,7 @@ export default function ThreadItem({ thread, onDelete }) {
         <div
           id={`comments-${thread._id}`}
           ref={commentsRef}
-          className="pt-4 border-t border-gray-100"
+          className="pt-4 border-t border-black/10 dark:border-white/10"
         >
           <CommentInput
             threadId={thread._id}
@@ -968,11 +891,7 @@ export default function ThreadItem({ thread, onDelete }) {
           {/* Image counter */}
           {imageIndices.length > 1 && (
             <div
-              className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-white text-sm font-medium"
-              style={{
-                background: "rgba(0, 0, 0, 0.5)",
-                backdropFilter: "blur(8px)",
-              }}
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-white text-sm font-medium bg-black/50"
             >
               {lightboxImgIdx + 1} / {imageIndices.length}
             </div>
@@ -983,12 +902,7 @@ export default function ThreadItem({ thread, onDelete }) {
             <>
               <button
                 type="button"
-                className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-50 h-12 w-12 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110"
-                style={{
-                  background: "rgba(255, 255, 255, 0.15)",
-                  color: "white",
-                  backdropFilter: "blur(8px)",
-                }}
+                className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-50 h-12 w-12 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110 bg-white/15 text-white"
                 onClick={(e) => {
                   e.stopPropagation();
                   prevImage();
@@ -1010,12 +924,7 @@ export default function ThreadItem({ thread, onDelete }) {
               </button>
               <button
                 type="button"
-                className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-50 h-12 w-12 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110"
-                style={{
-                  background: "rgba(255, 255, 255, 0.15)",
-                  color: "white",
-                  backdropFilter: "blur(8px)",
-                }}
+                className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-50 h-12 w-12 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110 bg-white/15 text-white"
                 onClick={(e) => {
                   e.stopPropagation();
                   nextImage();

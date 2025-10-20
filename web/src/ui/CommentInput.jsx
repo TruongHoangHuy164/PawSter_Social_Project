@@ -78,7 +78,7 @@ export default function CommentInput({ threadId, onCommentCreated }) {
         if (threadId) formData.append('threadId', threadId)
         files.forEach(file => formData.append('media', file))
         
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/comments`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/comments`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

@@ -49,7 +49,7 @@ export default function ChangePasswordModal({ open, onClose }) {
         {step === 'request' && (
           <div className="space-y-3">
             <p className="text-sm">Gửi mã OTP đến email của bạn để đổi mật khẩu.</p>
-            <button onClick={doRequestOtp} disabled={loading} className="w-full text-sm px-3 py-2 rounded bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-60">
+            <button onClick={doRequestOtp} disabled={loading} className="w-full text-sm px-3 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-60">
               {loading ? 'Đang gửi...' : 'Gửi OTP'}
             </button>
           </div>
@@ -65,7 +65,7 @@ export default function ChangePasswordModal({ open, onClose }) {
               <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} className="w-full mt-1 px-3 py-2 rounded border" placeholder="••••••••" />
             </div>
             <div className="flex gap-2">
-              <button type="submit" disabled={loading} className="flex-1 text-sm px-3 py-2 rounded bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-60">
+              <button type="submit" disabled={loading} className="flex-1 text-sm px-3 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-60">
                 {loading ? 'Đang đổi...' : 'Đổi mật khẩu'}
               </button>
               <button type="button" onClick={()=>setStep('request')} className="px-3 py-2 text-sm border rounded">Gửi lại OTP</button>

@@ -163,13 +163,13 @@ export default function Messages(){
 
   return (
     <div className="grid grid-cols-12 gap-4 h-[calc(100vh-80px)]">
-      <aside className="col-span-5 md:col-span-4 lg:col-span-3 p-2 rounded-xl" style={{background:'rgba(155,99,114,0.06)', border:'1px solid rgba(43,27,34,0.08)'}}>
+  <aside className="col-span-5 md:col-span-4 lg:col-span-3 p-2 rounded-2xl bg-white dark:bg-black border border-black/10 dark:border-white/10">
         <div className="font-semibold mb-2">Hội thoại</div>
         <div className="space-y-1 overflow-y-auto h-[calc(100%-40px)] pr-1">
           {conversations.map(c=>{
             const other = (c.participants||[]).find(p=> String(p._id) !== String(user?._id)) || {};
             return (
-              <button key={c._id} onClick={()=>setActive(c)} className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg text-left hover:bg-black/5 dark:hover:bg-white/5 ${active?._id===c._id?'bg-[color:var(--panel)]':''}`}>
+              <button key={c._id} onClick={()=>setActive(c)} className={`w-full flex items-center gap-3 px-2 py-2 rounded-2xl text-left hover:bg-black/5 dark:hover:bg-white/5 ${active?._id===c._id?'bg-black/5 dark:bg-white/5':''}`}>
                 <div className="relative">
                   <Avatar user={{ username: other.username, avatarUrl: other.avatarUrl }} size="sm" />
                   {Number(c.unreadCount||0) > 0 && (
@@ -188,7 +188,7 @@ export default function Messages(){
           })}
         </div>
       </aside>
-      <section className="col-span-7 md:col-span-8 lg:col-span-9 flex flex-col rounded-xl border" style={{borderColor:'var(--panel-border)'}}>
+  <section className="col-span-7 md:col-span-8 lg:col-span-9 flex flex-col rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-black">
         {!active ? (
           <div className="m-auto text-sm text-muted">Chọn một hội thoại để bắt đầu</div>
         ) : (
@@ -201,13 +201,13 @@ export default function Messages(){
                 </>
               );})()}
             </header>
-            <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-2 paw-bg">
+            <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-2">
               {messages.map(m=>{
                 const mine = String(m.from) === String(user?._id) || String(m.from?._id) === String(user?._id);
                 if (mine) {
                   return (
                     <div key={m._id} className="flex justify-end">
-                      <div className="max-w-[70%] px-3 py-2 rounded-2xl ml-auto text-white bg-gradient-to-br from-[color:var(--accent)] to-violet-500">
+                      <div className="max-w-[70%] px-3 py-2 rounded-2xl ml-auto text-white bg-black dark:bg-white dark:text-black">
                         <div className="space-y-2">
                           {m.media?.some(mm=>mm.type==='audio') ? (
                             m.media.filter(mm=>mm.type==='audio').map((mm, idx)=>(
@@ -226,7 +226,7 @@ export default function Messages(){
                 return (
                   <div key={m._id} className="flex items-end gap-2">
                     <Avatar user={{ username: other.username, avatarUrl: other.avatarUrl }} size="sm" />
-                    <div className="max-w-[70%] px-3 py-2 rounded-2xl bg-[color:var(--panel)]">
+                    <div className="max-w-[70%] px-3 py-2 rounded-2xl bg-black/5 dark:bg-white/5">
                       <div className="space-y-2">
                         {m.media?.some(mm=>mm.type==='audio') ? (
                           m.media.filter(mm=>mm.type==='audio').map((mm, idx)=>(
@@ -242,8 +242,8 @@ export default function Messages(){
                 );
               })}
             </div>
-            <form onSubmit={send} className="p-2 border-t flex items-center gap-2" style={{borderColor:'var(--panel-border)'}}>
-              <input value={input} onChange={e=>setInput(e.target.value)} className="flex-1 px-3 py-2 rounded-xl bg-transparent border" style={{borderColor:'var(--panel-border)'}} placeholder="Nhập tin nhắn..." />
+            <form onSubmit={send} className="p-2 border-t flex items-center gap-2 border-black/10 dark:border-white/10">
+              <input value={input} onChange={e=>setInput(e.target.value)} className="flex-1 px-3 py-2 rounded-xl bg-transparent border border-black/10 dark:border-white/10" placeholder="Nhập tin nhắn..." />
               <input type="file" accept="audio/*" className="hidden" id="audio-file-input" onChange={e=>{
                 const f = e.target.files?.[0]; if (f) { setAudioBlob(f); try{ const u = URL.createObjectURL(f); setPreviewUrl(u);}catch{} }
               }} />
@@ -287,11 +287,11 @@ export default function Messages(){
                   </button>
                 </div>
               )}
-              <button type="submit" disabled={uploadPct>0 && uploadPct<100} className="px-4 py-2 rounded-xl text-white bg-gradient-to-br from-[color:var(--accent)] to-violet-500 disabled:opacity-60">{uploadPct>0 && uploadPct<100 ? `Đang gửi ${uploadPct}%` : 'Gửi'}</button>
+              <button type="submit" disabled={uploadPct>0 && uploadPct<100} className="px-4 py-2 rounded-xl text-white bg-black dark:bg-white dark:text-black disabled:opacity-60">{uploadPct>0 && uploadPct<100 ? `Đang gửi ${uploadPct}%` : 'Gửi'}</button>
             </form>
             {uploadPct>0 && uploadPct<100 && (
               <div className="mx-2 mb-2 h-1 rounded bg-black/10 dark:bg-white/10 overflow-hidden">
-                <div className="h-full bg-violet-500" style={{ width: `${uploadPct}%` }} />
+                <div className="h-full bg-black dark:bg-white" style={{ width: `${uploadPct}%` }} />
               </div>
             )}
           </>

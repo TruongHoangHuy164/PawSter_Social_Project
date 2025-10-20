@@ -52,13 +52,13 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Total Users */}
-        <div className="card p-4 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
+  <div className="card p-4 border-l-4 border-black/30 dark:border-white/30 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="text-sm text-blue-500 mb-1">
+              <div className="text-sm text-neutral-500 mb-1">
                 👥 Tổng người dùng
               </div>
-              <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              <div className="text-3xl font-bold text-black dark:text-white">
                 {summary.totalUsers.toLocaleString()}
               </div>
               <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
@@ -80,13 +80,13 @@ export default function Dashboard() {
         </div>
 
         {/* Total Threads */}
-        <div className="card p-4 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
+  <div className="card p-4 border-l-4 border-black/30 dark:border-white/30 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="text-sm text-purple-500 mb-1">
+              <div className="text-sm text-neutral-500 mb-1">
                 📝 Tổng bài viết
               </div>
-              <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <div className="text-3xl font-bold text-black dark:text-white">
                 {summary.totalThreads.toLocaleString()}
               </div>
               <div className="text-xs text-gray-500 mt-1">
@@ -98,13 +98,13 @@ export default function Dashboard() {
         </div>
 
         {/* Total Revenue */}
-        <div className="card p-4 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
+  <div className="card p-4 border-l-4 border-black/30 dark:border-white/30 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="text-sm text-green-500 mb-1">
+              <div className="text-sm text-neutral-500 mb-1">
                 💰 Tổng doanh thu
               </div>
-              <div className="text-3xl font-bold text-green-600">
+              <div className="text-3xl font-bold text-black dark:text-white">
                 {formatCurrency(summary.totalRevenue)}
               </div>
               <div className="text-xs text-gray-500 mt-1">
@@ -116,13 +116,13 @@ export default function Dashboard() {
         </div>
 
         {/* Pro Users */}
-        <div className="card p-4 border-l-4 border-yellow-500 hover:shadow-lg transition-shadow">
+  <div className="card p-4 border-l-4 border-black/30 dark:border-white/30 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="text-sm text-yellow-600 mb-1">
+              <div className="text-sm text-neutral-500 mb-1">
                 💎 Người dùng Pro
               </div>
-              <div className="text-3xl font-bold text-yellow-600">
+              <div className="text-3xl font-bold text-black dark:text-white">
                 {summary.proUsers.toLocaleString()}
               </div>
               <div className="text-xs text-gray-500 mt-1">
@@ -135,13 +135,13 @@ export default function Dashboard() {
         </div>
 
         {/* Pending Payments */}
-        <div className="card p-4 border-l-4 border-orange-500 hover:shadow-lg transition-shadow">
+  <div className="card p-4 border-l-4 border-black/30 dark:border-white/30 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="text-sm text-orange-500 mb-1">
+              <div className="text-sm text-neutral-500 mb-1">
                 ⏳ Thanh toán chờ
               </div>
-              <div className="text-3xl font-bold text-orange-600">
+              <div className="text-3xl font-bold text-black dark:text-white">
                 {summary.pendingPayments}
               </div>
               <div className="text-xs text-gray-500 mt-1">Cần xử lý</div>
@@ -151,13 +151,13 @@ export default function Dashboard() {
         </div>
 
         {/* Conversion Rate */}
-        <div className="card p-4 border-l-4 border-pink-500 hover:shadow-lg transition-shadow">
+  <div className="card p-4 border-l-4 border-black/30 dark:border-white/30 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="text-sm text-pink-500 mb-1">
+              <div className="text-sm text-neutral-500 mb-1">
                 📊 Tỷ lệ chuyển đổi
               </div>
-              <div className="text-3xl font-bold text-pink-600">
+              <div className="text-3xl font-bold text-black dark:text-white">
                 {((summary.proUsers / summary.totalUsers) * 100).toFixed(1)}%
               </div>
               <div className="text-xs text-gray-500 mt-1">Free → Pro</div>
@@ -216,23 +216,9 @@ export default function Dashboard() {
                   }}
                 >
                   <defs>
-                    <linearGradient
-                      id="userGradient"
-                      x1="0%"
-                      y1="0%"
-                      x2="0%"
-                      y2="100%"
-                    >
-                      <stop
-                        offset="0%"
-                        stopColor="rgb(59, 130, 246)"
-                        stopOpacity="0.3"
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor="rgb(59, 130, 246)"
-                        stopOpacity="0.05"
-                      />
+                    <linearGradient id="userGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="black" stopOpacity="0.2" />
+                      <stop offset="100%" stopColor="black" stopOpacity="0.05" />
                     </linearGradient>
                   </defs>
 
@@ -257,7 +243,7 @@ export default function Dashboard() {
                       {/* Line */}
                       <polyline
                         fill="none"
-                        stroke="rgb(59, 130, 246)"
+                        stroke="currentColor"
                         strokeWidth="0.8"
                         vectorEffect="non-scaling-stroke"
                         points={trends.users
@@ -282,13 +268,7 @@ export default function Dashboard() {
                             Math.max(...trends.users.map((d) => d.total))) *
                             100;
                         return (
-                          <circle
-                            key={i}
-                            cx={x}
-                            cy={y}
-                            r="1"
-                            fill="rgb(59, 130, 246)"
-                          />
+                          <circle key={i} cx={x} cy={y} r="1" fill="currentColor" />
                         );
                       })}
                     </>
@@ -389,14 +369,7 @@ export default function Dashboard() {
                         </div>
 
                         {/* Bar */}
-                        <div
-                          className="w-full rounded-t transition-all"
-                          style={{
-                            height: `${height}%`,
-                            background:
-                              "linear-gradient(180deg, rgb(34, 197, 94), rgb(22, 163, 74))",
-                          }}
-                        ></div>
+                        <div className="w-full rounded-t transition-all bg-black/80 dark:bg-white/80" style={{ height: `${height}%` }}></div>
                       </div>
                     );
                   })}
@@ -428,7 +401,7 @@ export default function Dashboard() {
                 className="flex items-center justify-between p-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                  <div className="w-10 h-10 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold">
                     {user.username[0].toUpperCase()}
                   </div>
                   <div>
@@ -500,7 +473,7 @@ export default function Dashboard() {
                 key={thread._id}
                 className="flex items-start gap-3 p-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 text-white font-bold text-sm">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black dark:bg-white text-white dark:text-black font-bold text-sm">
                   {i + 1}
                 </div>
                 <div className="flex-1">
@@ -538,7 +511,7 @@ export default function Dashboard() {
                 className="flex items-center justify-between p-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 text-white font-bold text-sm">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-black dark:bg-white text-white dark:text-black font-bold text-sm">
                     {i + 1}
                   </div>
                   <div>

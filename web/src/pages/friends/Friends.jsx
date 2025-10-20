@@ -84,7 +84,7 @@ export default function Friends() {
                   </div>
                   <div className="flex items-center space-x-2">
                     {f.isPro && (
-                      <span className="text-xs bg-yellow-600 text-white px-2 py-0.5 rounded">
+                      <span className="text-xs px-2 py-0.5 rounded-full border border-black/20 dark:border-white/20">
                         PRO
                       </span>
                     )}
@@ -92,14 +92,14 @@ export default function Friends() {
                       f.badges.map((badge, index) => (
                         <span
                           key={index}
-                          className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded"
+                          className="text-xs px-2 py-0.5 rounded-full border border-black/20 dark:border-white/20"
                         >
                           {badge}
                         </span>
                       ))}
                     <button
                       onClick={() => handleRemoveFriend(f._id)}
-                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-colors"
+                      className="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-2xl text-xs transition-colors"
                       title="Xóa bạn bè"
                     >
                       Xóa bạn
@@ -124,12 +124,12 @@ export default function Friends() {
       <h1 className="text-xl font-bold">Quản lý bạn bè</h1>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-neutral-700">
+      <div className="flex border-b border-black/10 dark:border-white/10">
         <button
           onClick={() => setActiveTab("friends")}
           className={`px-4 py-2 font-medium ${
             activeTab === "friends"
-              ? "text-blue-400 border-b-2 border-blue-400"
+              ? "text-black dark:text-white border-b-2 border-black dark:border-white"
               : "text-neutral-400 hover:text-neutral-200"
           }`}
         >
@@ -139,7 +139,7 @@ export default function Friends() {
           onClick={() => setActiveTab("requests")}
           className={`px-4 py-2 font-medium ml-4 ${
             activeTab === "requests"
-              ? "text-blue-400 border-b-2 border-blue-400"
+              ? "text-black dark:text-white border-b-2 border-black dark:border-white"
               : "text-neutral-400 hover:text-neutral-200"
           }`}
         >
@@ -149,7 +149,7 @@ export default function Friends() {
           onClick={() => setActiveTab("search")}
           className={`px-4 py-2 font-medium ml-4 ${
             activeTab === "search"
-              ? "text-blue-400 border-b-2 border-blue-400"
+              ? "text-black dark:text-white border-b-2 border-black dark:border-white"
               : "text-neutral-400 hover:text-neutral-200"
           }`}
         >

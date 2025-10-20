@@ -52,7 +52,7 @@ export default function ReplyInput({ threadId, parentId, parentComment, onCancel
         if (parentId) formData.append('parentId', parentId)
         files.forEach(file => formData.append('media', file))
         
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/comments`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/comments`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -102,7 +102,7 @@ export default function ReplyInput({ threadId, parentId, parentComment, onCancel
   }
 
   return (
-    <div className="ml-4 mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+    <div className="ml-4 mt-2 p-3 rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-black">
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="flex gap-2">
           <div className="flex-1">
@@ -110,12 +110,12 @@ export default function ReplyInput({ threadId, parentId, parentComment, onCancel
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder={getPlaceholder()}
-              className="w-full resize-none border border-gray-200 rounded p-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full resize-none rounded p-2 text-sm outline-none border border-black/10 dark:border-white/10 bg-transparent focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"
               rows={2}
               maxLength={500}
               autoFocus
               style={{
-                color: content.startsWith('@') ? '#7c3aed' : 'inherit'
+                color: 'inherit'
               }}
             />
           </div>
@@ -123,7 +123,7 @@ export default function ReplyInput({ threadId, parentId, parentComment, onCancel
             <button
               type="submit"
               disabled={loading || (!content.trim() && files.length === 0)}
-              className="px-3 py-1 bg-violet-600 text-white rounded hover:bg-violet-500 disabled:opacity-40 text-sm"
+              className="px-3 py-1 rounded text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-90 transition disabled:opacity-40"
             >
               {loading ? 'Gửi...' : 'Gửi'}
             </button>
@@ -131,7 +131,7 @@ export default function ReplyInput({ threadId, parentId, parentComment, onCancel
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+                className="px-3 py-1 rounded text-sm border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5"
               >
                 Hủy
               </button>
@@ -157,14 +157,14 @@ export default function ReplyInput({ threadId, parentId, parentComment, onCancel
                             file.type.startsWith('audio/') ? 'audio' : 'other'
                 
                 return (
-                  <div key={i} className="relative group rounded overflow-hidden border border-gray-200 p-1 flex items-center justify-center bg-white">
+                  <div key={i} className="relative group rounded overflow-hidden border border-black/10 dark:border-white/10 p-1 flex items-center justify-center bg-white dark:bg-black">
                     {type === 'image' && <img src={url} alt={file.name} className="object-cover w-full h-12" />}
                     {type === 'video' && <video src={url} className="w-full h-12 object-cover" muted />}
-                    {type === 'audio' && <span className="text-[10px] text-gray-400 truncate">🎵</span>}
+                    {type === 'audio' && <span className="text-[10px] text-neutral-500 truncate">🎵</span>}
                     <button
                       type="button"
                       onClick={() => removeFile(i)}
-                      className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px] opacity-0 group-hover:opacity-100"
+                      className="absolute -top-1 -right-1 bg-black text-white dark:bg-white dark:text-black rounded-full w-4 h-4 text-[10px] opacity-0 group-hover:opacity-100"
                     >
                       ×
                     </button>
@@ -177,7 +177,7 @@ export default function ReplyInput({ threadId, parentId, parentComment, onCancel
 
         {error && <div className="text-xs text-red-500">{error}</div>}
         
-        <div className="flex justify-between items-center text-xs text-gray-500">
+        <div className="flex justify-between items-center text-xs text-neutral-500 dark:text-neutral-400">
           <span>{content.length}/500</span>
         </div>
       </form>

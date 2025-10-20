@@ -98,7 +98,7 @@ export default function PaymentReturn(){
       </div>
       <div className="text-sm text-neutral-600">{message}</div>
       <div className="pt-2">
-        <Link to="/upgrade" className="text-violet-600 hover:underline">Quay lại trang Nâng cấp</Link>
+        <Link to="/upgrade" className="hover:underline text-black dark:text-white">Quay lại trang Nâng cấp</Link>
         {status!=='success' && (
           <button
             onClick={()=>{
@@ -118,7 +118,7 @@ export default function PaymentReturn(){
                 setMessage(e.message||'Lỗi khi kiểm tra lại.');
               });
             }}
-            className="ml-4 text-xs px-3 py-1 rounded bg-violet-600 text-white"
+            className="ml-4 text-xs px-3 py-1 rounded-2xl bg-black dark:bg-white text-white dark:text-black"
           >
             Làm mới
           </button>

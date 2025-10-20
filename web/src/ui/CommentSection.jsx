@@ -421,8 +421,8 @@ export default function CommentSection({ threadId, onCommentCountChange }) {
       {/* WebSocket Connection Status */}
       {!connected && (
         <div className="text-center py-2">
-          <div className="inline-flex items-center gap-2 text-xs text-[color:var(--muted)] bg-white/60 px-3 py-1 rounded-full border" style={{borderColor:'var(--panel-border)'}}>
-            <div className="w-2 h-2 rounded-full animate-pulse" style={{background:'var(--pet-accent)'}}></div>
+          <div className="inline-flex items-center gap-2 text-xs text-[color:var(--muted)] bg-white/60 dark:bg-black/40 px-3 py-1 rounded-full border" style={{borderColor:'var(--panel-border)'}}>
+            <div className="w-2 h-2 rounded-full animate-pulse bg-black/60 dark:bg-white/60"></div>
             Đang kết nối...
           </div>
         </div>
@@ -439,7 +439,7 @@ export default function CommentSection({ threadId, onCommentCountChange }) {
           <p className="text-xs text-red-500">{error}</p>
           <button 
             onClick={() => loadComments(1)}
-            className="mt-1 text-xs px-2 py-1 rounded bg-violet-600 text-white hover:bg-violet-500"
+            className="mt-1 text-xs px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black hover:opacity-90 transition"
           >
             Thử lại
           </button>
@@ -586,8 +586,7 @@ function CommentItem({ comment, onReply, onDelete, onToggleLike, onLoadReplies, 
         return (
           <span 
             key={index} 
-            className="text-violet-600 font-medium"
-            style={{ color: '#7c3aed' }}
+            className="font-medium text-black dark:text-white"
           >
             @{part}
           </span>
@@ -626,7 +625,7 @@ function CommentItem({ comment, onReply, onDelete, onToggleLike, onLoadReplies, 
       </div>
 
       {/* Comment Content */}
-      <div className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "#2b1b22" }}>
+      <div className="text-sm leading-relaxed whitespace-pre-wrap text-neutral-800 dark:text-neutral-200">
         {renderCommentContent(comment.content)}
       </div>
 

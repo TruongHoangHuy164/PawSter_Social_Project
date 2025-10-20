@@ -20,7 +20,7 @@ const UserIcon = () => <UserCircleIcon className={iconClasses} />;
 const Item = ({ to, label, Icon }) => (
   <NavLink
     to={to}
-    className={({ isActive }) => `flex flex-col items-center gap-0.5 flex-1 py-2 text-xs ${isActive ? 'text-violet-400' : 'text-neutral-400 hover:text-neutral-200'}`}
+    className={({ isActive }) => `flex flex-col items-center gap-0.5 flex-1 py-2 text-xs ${isActive ? 'text-black dark:text-white' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'}`}
   >
     {({ isActive }) => <>
       <Icon active={isActive} />
@@ -38,20 +38,20 @@ export default function BottomBar({ onAdd }) {
     const el = document.getElementById('thread-composer');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('ring-2','ring-violet-500');
-      setTimeout(()=>el.classList.remove('ring-2','ring-violet-500'), 1600);
+  el.classList.add('ring-2','ring-black');
+  setTimeout(()=>el.classList.remove('ring-2','ring-black'), 1600);
     } else {
       navigate('/');
     }
   };
   return (
-    <div className="fixed bottom-0 inset-x-0 z-30 bg-opacity-60 backdrop-blur border-t" style={{borderColor:'var(--panel-border)'}}>
+    <div className="fixed bottom-0 inset-x-0 z-30 bg-white/70 dark:bg-black/40 glass border-t" style={{borderColor:'var(--panel-border)'}}>
       <div className="max-w-4xl mx-auto flex items-stretch justify-around px-3 md:px-6 py-3 container">
         <Item to="/" label="Home" Icon={HomeIcon} />
   <Item to="/messages" label="Tin nhắn" Icon={MessageIcon} />
         <button
           onClick={openComposer}
-          className="relative -mt-6 md:mt-0 md:mb-2 bg-gradient-to-br from-var(--accent) to-violet-500 text-white w-14 h-14 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-xl transform-gpu hover:scale-105 pop float"
+          className="relative -mt-6 md:mt-0 md:mb-2 bg-black text-white dark:bg-white dark:text-black w-14 h-14 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-xl transform-gpu hover:scale-105 pop float"
           aria-label="Thêm bài viết"
         >
           <AddIcon />

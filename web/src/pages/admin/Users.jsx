@@ -59,20 +59,20 @@ export default function Users() {
         <div className="flex gap-2">
           <button
             onClick={() => setView("list")}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
+            className={`px-4 py-2 rounded-lg font-medium transition border ${
               view === "list"
-                ? "bg-gradient-to-r from-[var(--accent)] to-[var(--pet-accent)] text-white"
-                : "bg-[var(--panel)] hover:bg-[var(--card-hover)]"
+                ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white"
+                : "bg-[var(--panel)] hover:bg-[var(--card-hover)] border-[var(--panel-border)]"
             }`}
           >
             📋 Danh sách
           </button>
           <button
             onClick={() => setView("stats")}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
+            className={`px-4 py-2 rounded-lg font-medium transition border ${
               view === "stats"
-                ? "bg-gradient-to-r from-[var(--accent)] to-[var(--pet-accent)] text-white"
-                : "bg-[var(--panel)] hover:bg-[var(--card-hover)]"
+                ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white"
+                : "bg-[var(--panel)] hover:bg-[var(--card-hover)] border-[var(--panel-border)]"
             }`}
           >
             📊 Thống kê
@@ -91,10 +91,10 @@ export default function Users() {
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition border ${
                   period === p
-                    ? "bg-gradient-to-r from-[var(--accent)] to-[var(--pet-accent)] text-white"
-                    : "bg-[var(--panel)] hover:bg-[var(--card-hover)]"
+                    ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white"
+                    : "bg-[var(--panel)] hover:bg-[var(--card-hover)] border-[var(--panel-border)]"
                 }`}
               >
                 {p === "7d" && "7 ngày"}
@@ -108,17 +108,17 @@ export default function Users() {
           {/* Summary Cards */}
           {stats?.summary && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="card p-4 border-l-4 border-blue-500">
+              <div className="card p-4 border-l-4 border-black/10 dark:border-white/10">
                 <div className="text-sm muted mb-1">Tổng người dùng</div>
                 <div className="text-2xl font-bold">
                   {stats.summary.total.toLocaleString()}
                 </div>
               </div>
-              <div className="card p-4 border-l-4 border-purple-500">
-                <div className="text-sm text-purple-400 mb-1">
+              <div className="card p-4 border-l-4 border-black/10 dark:border-white/10">
+                <div className="text-sm muted mb-1">
                   Người dùng Pro
                 </div>
-                <div className="text-2xl font-bold text-purple-500">
+                <div className="text-2xl font-bold">
                   {stats.summary.pro.toLocaleString()}
                 </div>
                 <div className="text-xs muted mt-1">
@@ -126,11 +126,11 @@ export default function Users() {
                   %
                 </div>
               </div>
-              <div className="card p-4 border-l-4 border-green-500">
-                <div className="text-sm text-green-400 mb-1">
+              <div className="card p-4 border-l-4 border-black/10 dark:border-white/10">
+                <div className="text-sm muted mb-1">
                   Người dùng Free
                 </div>
-                <div className="text-2xl font-bold text-green-500">
+                <div className="text-2xl font-bold">
                   {stats.summary.free.toLocaleString()}
                 </div>
                 <div className="text-xs muted mt-1">
@@ -140,9 +140,9 @@ export default function Users() {
                   %
                 </div>
               </div>
-              <div className="card p-4 border-l-4 border-pink-500">
-                <div className="text-sm text-pink-400 mb-1">Mới ({period})</div>
-                <div className="text-2xl font-bold text-pink-500">
+              <div className="card p-4 border-l-4 border-black/10 dark:border-white/10">
+                <div className="text-sm muted mb-1">Mới ({period})</div>
+                <div className="text-2xl font-bold">
                   {stats.summary.new.toLocaleString()}
                 </div>
               </div>
@@ -188,34 +188,13 @@ export default function Users() {
                       height: "calc(100% - 2rem)",
                     }}
                   >
-                    {/* Area under line - Total */}
-                    <defs>
-                      <linearGradient
-                        id="totalGradient"
-                        x1="0%"
-                        y1="0%"
-                        x2="0%"
-                        y2="100%"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="rgb(168, 85, 247)"
-                          stopOpacity="0.3"
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="rgb(168, 85, 247)"
-                          stopOpacity="0.05"
-                        />
-                      </linearGradient>
-                    </defs>
-
                     {stats.stats.length > 1 && (
                       <>
                         {/* Total users line */}
                         <polyline
                           fill="none"
-                          stroke="rgb(168, 85, 247)"
+                          stroke="currentColor"
+                          className="text-black dark:text-white"
                           strokeWidth="0.5"
                           vectorEffect="non-scaling-stroke"
                           points={stats.stats
@@ -230,7 +209,8 @@ export default function Users() {
                         {/* Pro users line */}
                         <polyline
                           fill="none"
-                          stroke="rgb(236, 72, 153)"
+                          stroke="currentColor"
+                          className="text-black/50 dark:text-white/50"
                           strokeWidth="0.3"
                           strokeDasharray="2,2"
                           vectorEffect="non-scaling-stroke"
@@ -246,7 +226,8 @@ export default function Users() {
                         {/* Free users line */}
                         <polyline
                           fill="none"
-                          stroke="rgb(59, 130, 246)"
+                          stroke="currentColor"
+                          className="text-black/30 dark:text-white/40"
                           strokeWidth="0.3"
                           strokeDasharray="2,2"
                           vectorEffect="non-scaling-stroke"
@@ -260,7 +241,7 @@ export default function Users() {
                         />
 
                         {/* Data points */}
-                        {stats.stats.map((item, i) => {
+                         {stats.stats.map((item, i) => {
                           const x = (i / (stats.stats.length - 1)) * 100;
                           const y = 100 - (item.total / maxValue) * 100;
                           return (
@@ -269,8 +250,8 @@ export default function Users() {
                               cx={x}
                               cy={y}
                               r="0.8"
-                              fill="rgb(168, 85, 247)"
-                              className="cursor-pointer"
+                              fill="currentColor"
+                              className="text-black dark:text-white cursor-pointer"
                             />
                           );
                         })}
@@ -306,15 +287,15 @@ export default function Users() {
                 {/* Legend */}
                 <div className="flex gap-4 mt-6 justify-center flex-wrap">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-0.5 bg-purple-500"></div>
+                    <div className="w-8 h-0.5 bg-black dark:bg-white"></div>
                     <span className="text-sm">Tổng người dùng</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-0.5 bg-pink-500 border-t-2 border-dashed border-pink-500"></div>
+                    <div className="w-8 h-0.5 bg-black/50 dark:bg-white/50" style={{ borderTop: "2px dashed" }}></div>
                     <span className="text-sm">Pro Users</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-0.5 bg-blue-500 border-t-2 border-dashed border-blue-500"></div>
+                    <div className="w-8 h-0.5 bg-black/30 dark:bg-white/40" style={{ borderTop: "2px dashed" }}></div>
                     <span className="text-sm">Free Users</span>
                   </div>
                 </div>
@@ -362,8 +343,7 @@ export default function Users() {
                                 d={`M 100 100 L 100 10 A 90 90 0 ${
                                   proAngle > 180 ? 1 : 0
                                 } 1 ${proEnd.x} ${proEnd.y} Z`}
-                                fill="url(#proGradient)"
-                                className="hover:opacity-80 transition-opacity cursor-pointer"
+                                className="fill-current text-black/80 dark:text-white/80 hover:opacity-80 transition-opacity cursor-pointer"
                               />
 
                               {/* Free slice */}
@@ -373,8 +353,7 @@ export default function Users() {
                                 } A 90 90 0 ${freeAngle > 180 ? 1 : 0} 1 ${
                                   freeEnd.x
                                 } ${freeEnd.y} Z`}
-                                fill="url(#freeGradient)"
-                                className="hover:opacity-80 transition-opacity cursor-pointer"
+                                className="fill-current text-black/40 dark:text-white/40 hover:opacity-80 transition-opacity cursor-pointer"
                               />
 
                               {/* Center circle for donut effect */}
@@ -403,40 +382,7 @@ export default function Users() {
                                 Tổng users
                               </text>
 
-                              <defs>
-                                <linearGradient
-                                  id="proGradient"
-                                  x1="0%"
-                                  y1="0%"
-                                  x2="100%"
-                                  y2="100%"
-                                >
-                                  <stop
-                                    offset="0%"
-                                    stopColor="rgb(168, 85, 247)"
-                                  />
-                                  <stop
-                                    offset="100%"
-                                    stopColor="rgb(236, 72, 153)"
-                                  />
-                                </linearGradient>
-                                <linearGradient
-                                  id="freeGradient"
-                                  x1="0%"
-                                  y1="0%"
-                                  x2="100%"
-                                  y2="100%"
-                                >
-                                  <stop
-                                    offset="0%"
-                                    stopColor="rgb(59, 130, 246)"
-                                  />
-                                  <stop
-                                    offset="100%"
-                                    stopColor="rgb(34, 211, 238)"
-                                  />
-                                </linearGradient>
-                              </defs>
+                              {/* Removed color gradients for monochrome style */}
                             </g>
                           );
                         })()}
@@ -447,7 +393,7 @@ export default function Users() {
                     <div className="mt-6 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded bg-gradient-to-r from-purple-500 to-pink-500"></div>
+                          <div className="w-4 h-4 rounded bg-black/80 dark:bg-white/80"></div>
                           <span className="text-sm">Pro Users</span>
                         </div>
                         <div className="text-sm font-semibold">
@@ -461,7 +407,7 @@ export default function Users() {
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded bg-gradient-to-r from-blue-500 to-cyan-500"></div>
+                          <div className="w-4 h-4 rounded bg-black/40 dark:bg-white/40"></div>
                           <span className="text-sm">Free Users</span>
                         </div>
                         <div className="text-sm font-semibold">
@@ -480,7 +426,7 @@ export default function Users() {
                 {/* Bar Chart */}
                 <div className="card p-6">
                   <h3 className="text-lg font-semibold mb-4">
-                    � Biểu đồ cột - Đăng ký theo ngày
+                    📊 Biểu đồ cột - Đăng ký theo ngày
                   </h3>
 
                   {/* Chart Container */}
@@ -522,10 +468,10 @@ export default function Users() {
                                   {item.date}
                                 </div>
                                 <div>Tổng: {item.total}</div>
-                                <div className="text-purple-400">
+                                <div className="muted">
                                   Pro: {item.pro}
                                 </div>
-                                <div className="text-blue-400">
+                                <div className="muted">
                                   Free: {item.free}
                                 </div>
                               </div>
@@ -538,14 +484,14 @@ export default function Users() {
                             >
                               {/* Free users (bottom) */}
                               <div
-                                className="absolute bottom-0 w-full bg-gradient-to-t from-blue-500 to-cyan-500"
+                                className="absolute bottom-0 w-full bg-black/30 dark:bg-white/30"
                                 style={{
                                   height: `${(item.free / item.total) * 100}%`,
                                 }}
                               />
                               {/* Pro users (top) */}
                               <div
-                                className="absolute top-0 w-full bg-gradient-to-t from-purple-500 to-pink-500"
+                                className="absolute top-0 w-full bg-black/70 dark:bg-white/70"
                                 style={{
                                   height: `${(item.pro / item.total) * 100}%`,
                                 }}
@@ -573,11 +519,11 @@ export default function Users() {
                   {/* Legend */}
                   <div className="flex gap-4 mt-6 justify-center">
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-gradient-to-r from-purple-500 to-pink-500" />
+                      <div className="w-4 h-4 rounded bg-black/70 dark:bg-white/70" />
                       <span className="text-sm">Pro Users</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded bg-gradient-to-r from-blue-500 to-cyan-500" />
+                      <div className="w-4 h-4 rounded bg-black/30 dark:bg-white/30" />
                       <span className="text-sm">Free Users</span>
                     </div>
                   </div>
@@ -611,11 +557,11 @@ export default function Users() {
                       <td className="p-2 muted">{u.email}</td>
                       <td className="p-2">
                         {u.isPro ? (
-                          <span className="px-2 py-1 rounded-full text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border border-purple-500/30">
+                          <span className="px-2 py-1 rounded-full text-xs border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5">
                             💎 Pro
                           </span>
                         ) : (
-                          <span className="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          <span className="px-2 py-1 rounded-full text-xs border border-black/15 dark:border-white/15">
                             Free
                           </span>
                         )}

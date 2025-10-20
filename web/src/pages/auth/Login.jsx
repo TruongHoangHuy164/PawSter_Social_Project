@@ -73,13 +73,13 @@ export default function Login(){
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-transparent to-transparent">
-      <div className="w-full max-w-md p-6 rounded-xl card">
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="w-full max-w-md p-6 rounded-2xl bg-white dark:bg-black border border-black/10 dark:border-white/10 shadow-sm">
         <div className="flex items-center gap-4 mb-4">
           <img src="/logo.png" alt="logo" className="w-12 h-12 rounded-md shadow" />
           <div>
-            <h1 className="text-2xl font-bold" style={{color:'var(--text)'}}>Chào mừng đến với Pawster</h1>
-            <p className="text-sm text-muted-foreground">Đăng nhập để tiếp tục</p>
+            <h1 className="text-2xl font-bold text-black dark:text-white">Chào mừng đến với Pawster</h1>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Đăng nhập để tiếp tục</p>
           </div>
         </div>
 
@@ -87,18 +87,18 @@ export default function Login(){
           {error && <div className="text-red-400 text-sm">{error}</div>}
           <div>
             <label className="block text-sm mb-1">Email</label>
-            <input type="email" className="w-full px-3 py-2 rounded-md bg-white border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] transition" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} required />
+            <input type="email" className="w-full px-3 py-2 rounded-xl bg-transparent border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 text-black dark:text-white" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} required />
           </div>
           <div>
             <label className="block text-sm mb-1">Mật khẩu</label>
-            <input type="password" className="w-full px-3 py-2 rounded-md bg-white border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] transition" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} required />
+            <input type="password" className="w-full px-3 py-2 rounded-xl bg-transparent border border-black/10 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-black/30 dark:focus:ring-white/30 text-black dark:text-white" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} required />
           </div>
-          <button disabled={loading} className="w-full py-2 rounded-md bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-md hover:scale-[1.01] transform-gpu transition">{loading? 'Đang xử lý...' : 'Đăng nhập'}</button>
-          <p className="text-xs text-center text-neutral-400">Chưa có tài khoản? <Link to="/register" className="text-violet-400 hover:underline">Đăng ký</Link></p>
+          <button disabled={loading} className="w-full py-2 rounded-2xl bg-black text-white dark:bg-white dark:text-black shadow-md hover:scale-[1.01] transform-gpu transition">{loading? 'Đang xử lý...' : 'Đăng nhập'}</button>
+          <p className="text-xs text-center text-neutral-500 dark:text-neutral-400">Chưa có tài khoản? <Link to="/register" className="underline-offset-4 hover:underline">Đăng ký</Link></p>
         </form>
         <div className="relative my-4">
           <div className="h-px bg-black/10 dark:bg-white/10" />
-          <div className="absolute left-1/2 -translate-x-1/2 -top-3 px-3 text-xs bg-[color:var(--panel)]">Hoặc</div>
+          <div className="absolute left-1/2 -translate-x-1/2 -top-3 px-3 text-xs bg-white dark:bg-black">Hoặc</div>
         </div>
         <div ref={googleBtnRef} className="flex justify-center" />
       </div>

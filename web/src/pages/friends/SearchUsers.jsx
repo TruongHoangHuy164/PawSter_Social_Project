@@ -100,12 +100,12 @@ export default function SearchUsers() {
       case "friends":
         return (
           <div className="flex space-x-2">
-            <span className="px-3 py-1.5 bg-green-600 text-white rounded text-sm">
+            <span className="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-2xl text-sm">
               Bạn bè
             </span>
             <button
               onClick={() => handleRemoveFriend(user._id, user.username)}
-              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
+              className="px-3 py-1.5 bg-black/80 dark:bg-white/80 hover:bg-black dark:hover:bg-white text-white dark:text-black rounded-2xl text-sm transition-colors"
               title="Xóa bạn bè"
             >
               Xóa bạn
@@ -116,14 +116,14 @@ export default function SearchUsers() {
         return (
           <button
             onClick={() => handleCancelRequest(user._id)}
-            className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm transition-colors"
+            className="px-3 py-1.5 bg-black/80 dark:bg-white/80 hover:bg-black dark:hover:bg-white text-white dark:text-black rounded-2xl text-sm transition-colors"
           >
             Hủy lời mời
           </button>
         );
       case "received":
         return (
-          <span className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm">
+          <span className="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-2xl text-sm">
             Đã gửi cho bạn
           </span>
         );
@@ -131,7 +131,7 @@ export default function SearchUsers() {
         return (
           <button
             onClick={() => handleSendRequest(user._id)}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+            className="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-2xl text-sm transition-colors"
           >
             Kết bạn
           </button>
@@ -150,7 +150,7 @@ export default function SearchUsers() {
           placeholder="Tìm kiếm theo tên hoặc email..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full p-3 bg-neutral-800 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:border-blue-500"
+          className="w-full p-3 bg-transparent border border-black/10 dark:border-white/10 rounded-2xl text-inherit placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"
         />
       </div>
 
@@ -179,7 +179,7 @@ export default function SearchUsers() {
       {users.length > 0 && (
         <div className="space-y-4">
           {users.map((user) => (
-            <div key={user._id} className="card p-4 rounded-lg">
+            <div key={user._id} className="card p-4 rounded-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Avatar user={user} size="lg" />
@@ -188,7 +188,7 @@ export default function SearchUsers() {
                     <p className="text-sm text-neutral-400">{user.email}</p>
                     <div className="flex items-center space-x-2 mt-1">
                       {user.isPro && (
-                        <span className="text-xs bg-yellow-600 text-white px-2 py-0.5 rounded">
+                        <span className="text-xs px-2 py-0.5 rounded-full border border-black/20 dark:border-white/20">
                           PRO
                         </span>
                       )}
@@ -197,7 +197,7 @@ export default function SearchUsers() {
                           {user.badges.map((badge, index) => (
                             <span
                               key={index}
-                              className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded"
+                              className="text-xs px-2 py-0.5 rounded-full border border-black/20 dark:border-white/20"
                             >
                               {badge}
                             </span>

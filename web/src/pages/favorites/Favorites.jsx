@@ -41,10 +41,7 @@ export default function Favorites() {
 
       {loading && (
         <div className="text-center py-8">
-          <div
-            className="inline-block animate-spin rounded-full h-8 w-8 border-b-2"
-            style={{ borderColor: "var(--accent)" }}
-          ></div>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-black/20 dark:border-white/20 border-t-transparent"></div>
         </div>
       )}
 

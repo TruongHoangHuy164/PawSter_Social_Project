@@ -4,7 +4,7 @@ const storage = multer.memoryStorage();
 
 const allowed = [
   // images
-  'image/jpeg','image/png','image/gif','image/webp','image/avif','image/jpg','image/svg+xml',
+  'image/jpeg','image/png','image/gif','image/webp','image/avif','image/jpg','image/svg+xml','image/heic','image/heif','image/heic-sequence','image/heif-sequence',
   // video
   'video/mp4','video/quicktime','video/webm','video/ogg',
   // audio/voice

@@ -179,7 +179,7 @@ export default function ThreadComposer({ onCreated }){
         files.forEach(f=> form.append('media', f));
         await new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-            xhr.open('POST', (import.meta.env.VITE_API_URL || 'http://localhost:3000/api') + '/threads');
+            xhr.open('POST', (import.meta.env.VITE_API_URL || '/api') + '/threads');
             if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + token);
             xhr.upload.onprogress = (ev)=>{
               if (ev.lengthComputable) {
@@ -218,9 +218,9 @@ export default function ThreadComposer({ onCreated }){
   };
 
   return (
-    <form id="thread-composer" onSubmit={submit} className="rounded-xl p-5 space-y-3 lux-card">
+    <form id="thread-composer" onSubmit={submit} className="rounded-2xl p-5 space-y-3 border border-black/10 dark:border-white/10 bg-white dark:bg-black">
       {/* Input shell */}
-      <div className="rounded-xl p-2 md:p-3 transition-all duration-200" style={{ background: 'linear-gradient(180deg, rgba(155,99,114,0.06), rgba(255,255,255,0.9))', border: '1px solid rgba(43,27,34,0.08)' }}>
+  <div className="rounded-2xl p-2 md:p-3 transition-all duration-200 border border-black/10 dark:border-white/10 bg-white dark:bg-black">
         <div className="flex items-end gap-2 md:gap-3">
           <div className="flex-1">
             <textarea
@@ -231,26 +231,25 @@ export default function ThreadComposer({ onCreated }){
               maxLength={500}
               rows={3}
               placeholder="Chia sẻ khoảnh khắc cùng thú cưng của bạn... 🐾"
-              className="w-full resize-none rounded-lg px-3 py-2 md:px-4 md:py-3 text-sm outline-none bg-white/80"
-              style={{ border: '1px solid rgba(43,27,34,0.12)', boxShadow: '0 1px 2px rgba(0,0,0,0.04) inset' }}
+              className="w-full resize-none rounded-xl px-3 py-2 md:px-4 md:py-3 text-sm outline-none bg-transparent border border-black/10 dark:border-white/10 text-black dark:text-white"
               onKeyDown={(e)=>{ if ((e.ctrlKey||e.metaKey) && e.key==='Enter'){ if (!loading && (text.trim()||files.length>0)) submit(e);} }}
             />
             {/* Mobile actions */}
             <div className="mt-2 flex items-center justify-between md:hidden">
               <div className="flex items-center gap-2">
                 {/* Media */}
-                <button type="button" onClick={()=>fileInputRef.current?.click()} title="Thêm ảnh/video/audio" className="h-9 w-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(155,99,114,0.08)', color: '#9b6372', border: '1px solid rgba(155,99,114,0.2)' }}>
+                <button type="button" onClick={()=>fileInputRef.current?.click()} title="Thêm ảnh/video/audio" className="h-9 w-9 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                 </button>
                 {/* Stickers */}
                 <div className="relative" ref={stickerWrapMobileRef}>
-                  <button type="button" onClick={()=>setShowStickers(s=>!s)} title="Chọn sticker" className="h-9 w-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(155,99,114,0.08)', color: '#9b6372', border: '1px solid rgba(155,99,114,0.2)' }}>
+                  <button type="button" onClick={()=>setShowStickers(s=>!s)} title="Chọn sticker" className="h-9 w-9 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v-2a8 8 0 1 0-16 0v2"/><path d="M2 12h20"/><path d="M7 17c2 1 4 1 6 0"/></svg>
                   </button>
                 </div>
                 {/* Tag friend */}
                 <div className="relative" ref={tagWrapMobileRef}>
-                  <button type="button" onClick={openFriends} title="Gắn thẻ bạn bè" className="h-9 w-9 rounded-full flex items-center justify-center" style={{ background: 'rgba(155,99,114,0.08)', color: '#9b6372', border: '1px solid rgba(155,99,114,0.2)' }}>
+                  <button type="button" onClick={openFriends} title="Gắn thẻ bạn bè" className="h-9 w-9 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
                       <circle cx="9" cy="7" r="4"/>
@@ -265,17 +264,17 @@ export default function ThreadComposer({ onCreated }){
           </div>
           {/* Desktop actions */}
           <div className="hidden md:flex items-center gap-2">
-            <button type="button" onClick={()=>fileInputRef.current?.click()} title="Thêm ảnh/video/audio" className="h-10 w-10 rounded-full flex items-center justify-center shadow-sm hover:scale-[1.03] transition" style={{ background: 'rgba(155,99,114,0.08)', color: '#9b6372', border: '1px solid rgba(155,99,114,0.2)' }}>
+            <button type="button" onClick={()=>fileInputRef.current?.click()} title="Thêm ảnh/video/audio" className="h-10 w-10 rounded-full flex items-center justify-center shadow-sm hover:scale-[1.03] transition border border-black/10 dark:border-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
             </button>
             <div className="relative" ref={stickerWrapDesktopRef}>
-              <button type="button" onClick={()=>setShowStickers(s=>!s)} title="Chọn sticker" className="h-10 w-10 rounded-full flex items-center justify-center shadow-sm hover:scale-[1.03] transition" style={{ background: 'rgba(155,99,114,0.08)', color: '#9b6372', border: '1px solid rgba(155,99,114,0.2)' }}>
+              <button type="button" onClick={()=>setShowStickers(s=>!s)} title="Chọn sticker" className="h-10 w-10 rounded-full flex items-center justify-center shadow-sm hover:scale-[1.03] transition border border-black/10 dark:border-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v-2a8 8 0 1 0-16 0v2"/><path d="M2 12h20"/><path d="M7 17c2 1 4 1 6 0"/></svg>
               </button>
             </div>
             {/* Tag friend */}
             <div className="relative" ref={tagWrapDesktopRef}>
-              <button type="button" onClick={openFriends} title="Gắn thẻ bạn bè" className="h-10 w-10 rounded-full flex items-center justify-center shadow-sm hover:scale-[1.03] transition" style={{ background: 'rgba(155,99,114,0.08)', color: '#9b6372', border: '1px solid rgba(155,99,114,0.2)' }}>
+              <button type="button" onClick={openFriends} title="Gắn thẻ bạn bè" className="h-10 w-10 rounded-full flex items-center justify-center shadow-sm hover:scale-[1.03] transition border border-black/10 dark:border-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
                   <circle cx="9" cy="7" r="4"/>
@@ -290,14 +289,14 @@ export default function ThreadComposer({ onCreated }){
 
       {/* Sticker selection panel */}
       {showStickers && (
-        <div ref={stickerPanelRef} className="-mt-1 rounded-2xl p-3 md:p-4 shadow-2xl" style={{ background: '#fff', border: '1px solid rgba(43,27,34,0.1)' }}>
+  <div ref={stickerPanelRef} className="-mt-1 rounded-2xl p-3 md:p-4 shadow-2xl bg-white dark:bg-black border border-black/10 dark:border-white/10">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm font-medium" style={{ color: '#6b4a57' }}>Chọn sticker</div>
-            <button type="button" onClick={()=>setShowStickers(false)} className="h-8 w-8 rounded-full flex items-center justify-center" style={{ background: 'rgba(155,99,114,0.06)', color: '#9b6372', border: '1px solid rgba(155,99,114,0.2)' }} aria-label="Đóng sticker">×</button>
+            <div className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Chọn sticker</div>
+            <button type="button" onClick={()=>setShowStickers(false)} className="h-8 w-8 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5" aria-label="Đóng sticker">×</button>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             {stickers.map((s,i)=> (
-              <button key={i} type="button" onClick={()=> insertAtCursor(s + ' ')} className="h-10 w-10 md:h-12 md:w-12 text-xl md:text-2xl leading-none rounded-xl hover:scale-105 transition-transform" style={{ background: 'rgba(155,99,114,0.06)', border: '1px solid rgba(43,27,34,0.1)' }} title={`Sticker ${i+1}`}>{s}</button>
+              <button key={i} type="button" onClick={()=> insertAtCursor(s + ' ')} className="h-10 w-10 md:h-12 md:w-12 text-xl md:text-2xl leading-none rounded-xl hover:scale-105 transition-transform border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5" title={`Sticker ${i+1}`}>{s}</button>
             ))}
           </div>
         </div>
@@ -305,23 +304,23 @@ export default function ThreadComposer({ onCreated }){
 
       {/* Mention suggestions */}
       {showMention && (
-        <div ref={mentionPanelRef} className="-mt-1 rounded-2xl p-2 shadow-xl" style={{ background: '#fff', border: '1px solid rgba(43,27,34,0.12)' }}>
-          <div className="text-xs px-2 pb-1" style={{ color: '#6b4a57' }}>Gắn thẻ bạn bè</div>
+  <div ref={mentionPanelRef} className="-mt-1 rounded-2xl p-2 shadow-xl bg-white dark:bg-black border border-black/10 dark:border-white/10">
+          <div className="text-xs px-2 pb-1 text-neutral-600 dark:text-neutral-300">Gắn thẻ bạn bè</div>
           {mentionLoading ? (
-            <div className="text-xs px-2 py-1" style={{ color: '#9b6372' }}>Đang tìm...</div>
+            <div className="text-xs px-2 py-1 text-neutral-500">Đang tìm...</div>
           ) : (
-            <div className="max-h-48 overflow-auto divide-y divide-[rgba(43,27,34,0.06)]">
+            <div className="max-h-48 overflow-auto divide-y divide-black/10 dark:divide-white/10">
               {mentionResults.length === 0 ? (
-                <div className="text-xs px-2 py-2" style={{ color: '#9b6372' }}>Không tìm thấy</div>
+                <div className="text-xs px-2 py-2 text-neutral-500">Không tìm thấy</div>
               ) : (
                 mentionResults.slice(0,8).map(u => (
-                  <button key={u._id} type="button" onClick={()=>pickMention(u)} className="w-full flex items-center gap-2 px-2 py-2 hover:bg-[rgba(155,99,114,0.06)] text-left">
-                    <div className="h-7 w-7 rounded-full bg-[rgba(155,99,114,0.1)] flex items-center justify-center text-[11px]">{(u.username||'?').slice(0,1).toUpperCase()}</div>
+                  <button key={u._id} type="button" onClick={()=>pickMention(u)} className="w-full flex items-center gap-2 px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5 text-left">
+                    <div className="h-7 w-7 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center text-[11px]">{(u.username||'?').slice(0,1).toUpperCase()}</div>
                     <div className="flex-1">
-                      <div className="text-xs font-medium" style={{ color: '#2b1b22' }}>{u.username}</div>
-                      <div className="text-[11px]" style={{ color: '#6b4a57' }}>{u.email}</div>
+                      <div className="text-xs font-medium text-neutral-800 dark:text-neutral-200">{u.username}</div>
+                      <div className="text-[11px] text-neutral-500">{u.email}</div>
                     </div>
-                    {u.isPro && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,176,0,0.15)', border: '1px solid rgba(255,176,0,0.3)', color: '#8a5b00' }}>PRO</span>}
+                    {u.isPro && <span className="text-[10px] px-2 py-0.5 rounded-full border border-black/15 dark:border-white/15 text-neutral-700 dark:text-neutral-300">PRO</span>}
                   </button>
                 ))
               )}
@@ -332,26 +331,26 @@ export default function ThreadComposer({ onCreated }){
 
       {/* Friends list panel */}
       {showFriends && (
-        <div ref={friendsPanelRef} className="-mt-1 rounded-2xl p-2 shadow-xl" style={{ background: '#fff', border: '1px solid rgba(43,27,34,0.12)' }}>
+  <div ref={friendsPanelRef} className="-mt-1 rounded-2xl p-2 shadow-xl bg-white dark:bg-black border border-black/10 dark:border-white/10">
           <div className="flex items-center justify-between mb-1">
-            <div className="text-xs px-2" style={{ color: '#6b4a57' }}>Chọn bạn để gắn thẻ</div>
-            <button type="button" onClick={()=>setShowFriends(false)} className="h-7 w-7 rounded-full flex items-center justify-center" style={{ background: 'rgba(155,99,114,0.06)', color: '#9b6372', border: '1px solid rgba(155,99,114,0.2)' }} aria-label="Đóng">×</button>
+            <div className="text-xs px-2 text-neutral-600 dark:text-neutral-300">Chọn bạn để gắn thẻ</div>
+            <button type="button" onClick={()=>setShowFriends(false)} className="h-7 w-7 rounded-full flex items-center justify-center border border-black/10 dark:border-white/10 text-neutral-700 dark:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5" aria-label="Đóng">×</button>
           </div>
           {friendsLoading ? (
-            <div className="text-xs px-2 py-1" style={{ color: '#9b6372' }}>Đang tải...</div>
+            <div className="text-xs px-2 py-1 text-neutral-500">Đang tải...</div>
           ) : (
-            <div className="max-h-48 overflow-auto divide-y divide-[rgba(43,27,34,0.06)]">
+            <div className="max-h-48 overflow-auto divide-y divide-black/10 dark:divide-white/10">
               {(friends || []).length === 0 ? (
-                <div className="text-xs px-2 py-2" style={{ color: '#9b6372' }}>Không có bạn bè</div>
+                <div className="text-xs px-2 py-2 text-neutral-500">Không có bạn bè</div>
               ) : (
                 friends.slice(0, 30).map(f => (
-                  <button key={f._id} type="button" onClick={()=>pickFriend(f)} className="w-full flex items-center gap-2 px-2 py-2 hover:bg-[rgba(155,99,114,0.06)] text-left">
-                    <div className="h-7 w-7 rounded-full bg-[rgba(155,99,114,0.1)] flex items-center justify-center text-[11px]">{(f.username||'?').slice(0,1).toUpperCase()}</div>
+                  <button key={f._id} type="button" onClick={()=>pickFriend(f)} className="w-full flex items-center gap-2 px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5 text-left">
+                    <div className="h-7 w-7 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center text-[11px]">{(f.username||'?').slice(0,1).toUpperCase()}</div>
                     <div className="flex-1">
-                      <div className="text-xs font-medium" style={{ color: '#2b1b22' }}>{f.username}</div>
-                      <div className="text-[11px]" style={{ color: '#6b4a57' }}>{f.email}</div>
+                      <div className="text-xs font-medium text-neutral-800 dark:text-neutral-200">{f.username}</div>
+                      <div className="text-[11px] text-neutral-500">{f.email}</div>
                     </div>
-                    {f.isPro && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,176,0,0.15)', border: '1px solid rgba(255,176,0,0.3)', color: '#8a5b00' }}>PRO</span>}
+                    {f.isPro && <span className="text-[10px] px-2 py-0.5 rounded-full border border-black/15 dark:border-white/15 text-neutral-700 dark:text-neutral-300">PRO</span>}
                   </button>
                 ))
               )}
@@ -382,8 +381,8 @@ export default function ThreadComposer({ onCreated }){
       )}
 
       {files.length>0 && loading && (
-        <div className="w-full h-2 bg-neutral-200 rounded overflow-hidden">
-          <div className="h-full" style={{background:'linear-gradient(90deg, var(--accent), var(--pet-accent))', width: progress+'%'}} />
+        <div className="w-full h-2 bg-neutral-200 dark:bg-neutral-800 rounded overflow-hidden">
+          <div className="h-full bg-black dark:bg-white" style={{ width: progress+'%' }} />
         </div>
       )}
       {error && <div className="text-xs text-red-400">{error}</div>}

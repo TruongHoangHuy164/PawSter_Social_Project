@@ -14,7 +14,7 @@ const UserIcon = () => <UserCircleIcon className={iconClasses} />;
 const Item = ({ to, label, Icon }) => (
   <NavLink
     to={to}
-    className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${isActive ? 'text-violet-500 bg-[color:var(--panel)]' : 'text-muted hover:bg-black/5 dark:hover:bg-white/5'}`}
+    className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-2xl text-sm transition border ${isActive ? 'text-black dark:text-white bg-white dark:bg-black border-black/10 dark:border-white/15' : 'text-neutral-500 dark:text-neutral-400 border-transparent hover:bg-black/5 dark:hover:bg-white/5'}`}
   >
     {({ isActive }) => <>
       <Icon active={isActive} />
@@ -30,8 +30,8 @@ export default function LeftSidebar({ onAdd }) {
     const el = document.getElementById('thread-composer');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('ring-2','ring-violet-500');
-      setTimeout(()=>el.classList.remove('ring-2','ring-violet-500'), 1600);
+  el.classList.add('ring-2','ring-black');
+  setTimeout(()=>el.classList.remove('ring-2','ring-black'), 1600);
     } else {
       navigate('/');
     }
@@ -44,7 +44,7 @@ export default function LeftSidebar({ onAdd }) {
         <Item to="/messages" label="Tin nhắn" Icon={MessageIcon} />
         <button
           onClick={openComposer}
-          className="mt-1 flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white bg-gradient-to-br from-[color:var(--accent)] to-violet-500 shadow hover:shadow-md transition"
+          className="mt-1 flex items-center gap-3 px-3 py-2 rounded-2xl text-sm text-white bg-black dark:bg-white dark:text-black shadow hover:shadow-md transition"
           aria-label="Thêm bài viết"
         >
           <AddIcon />

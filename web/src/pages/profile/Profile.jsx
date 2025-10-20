@@ -173,7 +173,7 @@ export default function Profile() {
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6 page-panel">
       {/* COVER SECTION */}
-      <div className="relative h-44 rounded-xl overflow-hidden border border-white/6 bg-gradient-to-b from-transparent to-transparent flex items-center justify-center text-neutral-600 card">
+  <div className="relative h-44 rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-transparent flex items-center justify-center text-neutral-600 card">
         {cover ? (
           <img src={cover} alt="cover" className="object-cover w-full h-full" />
         ) : remoteCover ? (
@@ -254,7 +254,7 @@ export default function Profile() {
               giới hạn
             </span>
             {user.isPro && (
-              <span className="text-violet-400 flex items-center gap-2">
+              <span className="flex items-center gap-2 text-xs px-2 py-0.5 rounded-full border border-black/20 dark:border-white/20">
                 <span>PRO</span>
                 {proExpiryStr && (
                   <span className="text-neutral-400">
@@ -267,7 +267,7 @@ export default function Profile() {
         </div>
       </div>
       {/* EDIT FIELDS */}
-      <div className="bg-transparent border border-white/6 rounded-lg p-5 space-y-5 card">
+  <div className="bg-transparent border border-black/10 dark:border-white/10 rounded-2xl p-5 space-y-5 card">
         <div className="grid md:grid-cols-2 gap-5">
           <div className="space-y-2">
             <label className="text-xs uppercase tracking-wide text-neutral-400">
@@ -276,7 +276,7 @@ export default function Profile() {
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full text-sm rounded bg-white border border-neutral-200 focus:border-[color:var(--accent)] focus:ring-[color:var(--accent)] px-3 py-2 outline-none"
+              className="w-full text-sm rounded-2xl bg-transparent border border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 px-3 py-2 outline-none"
             />
           </div>
           <div className="space-y-2">
@@ -287,7 +287,7 @@ export default function Profile() {
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://..."
-              className="w-full text-sm rounded bg-white border border-neutral-200 focus:border-[color:var(--accent)] focus:ring-[color:var(--accent)] px-3 py-2 outline-none"
+              className="w-full text-sm rounded-2xl bg-transparent border border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 px-3 py-2 outline-none"
             />
           </div>
           <div className="space-y-2 md:col-span-2">
@@ -298,7 +298,7 @@ export default function Profile() {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={3}
-              className="w-full resize-none text-sm rounded bg-white border border-neutral-200 focus:border-[color:var(--accent)] focus:ring-[color:var(--accent)] px-3 py-2 outline-none"
+              className="w-full resize-none text-sm rounded-2xl bg-transparent border border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 px-3 py-2 outline-none"
               placeholder="Giới thiệu ngắn..."
             />
           </div>
@@ -307,17 +307,17 @@ export default function Profile() {
           <button
             disabled={saving}
             onClick={saveProfile}
-            className="px-5 py-2 rounded bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-sm font-medium"
+            className="px-5 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 text-sm font-medium"
           >
             {saving ? "Đang lưu..." : "Lưu"}
           </button>
-          {msg && <div className="text-xs text-violet-400">{msg}</div>}
+          {msg && <div className="text-xs text-neutral-500">{msg}</div>}
         </div>
         {website && (
           <div className="text-xs text-neutral-400">
             Website:{" "}
             <a
-              className="text-violet-400 hover:underline"
+              className="text-black dark:text-white hover:underline"
               target="_blank"
               rel="noreferrer"
               href={website}
@@ -333,7 +333,7 @@ export default function Profile() {
         )}
       </div>
       {/* TABS */}
-      <div className="border-b border-white/6 flex gap-8 px-2 text-sm">
+  <div className="border-b border-black/10 dark:border-white/10 flex gap-8 px-2 text-sm">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -346,7 +346,7 @@ export default function Profile() {
           >
             {t.label}
             {activeTab === t.key && (
-              <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-violet-500 rounded-full" />
+              <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-black dark:bg-white rounded-full" />
             )}
           </button>
         ))}
@@ -372,7 +372,7 @@ export default function Profile() {
                 <div key={comment._id} className="card p-4 space-y-3">
                   {/* Comment Header */}
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold flex-shrink-0">
                       {comment.author?.username?.[0]?.toUpperCase() || "?"}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -381,7 +381,7 @@ export default function Profile() {
                           {comment.author?.username || "Unknown"}
                         </span>
                         {comment.author?.isPro && (
-                          <span className="text-xs bg-yellow-500/20 text-yellow-600 px-2 py-0.5 rounded">
+                          <span className="text-xs px-2 py-0.5 rounded border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5">
                             PRO
                           </span>
                         )}
@@ -484,7 +484,7 @@ export default function Profile() {
                       {comment.threadId && (
                         <a
                           href={`/thread/${comment.threadId._id}`}
-                          className="text-blue-500 hover:text-blue-600 transition-colors"
+                          className="underline hover:opacity-80 transition-colors"
                         >
                           → Xem bài viết gốc
                         </a>

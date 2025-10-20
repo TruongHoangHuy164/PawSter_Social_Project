@@ -8,7 +8,14 @@ import LeftSidebar from './LeftSidebar.jsx';
 import FloatingChatButton from './FloatingChatButton.jsx';
 import ChangePasswordModal from '../pages/ChangePasswordModal.jsx';
 
-const NavItem = ({ to, children }) => <NavLink to={to} className={({isActive})=>`px-3 py-2 rounded-full text-sm font-medium hover:shadow-sm ${isActive?`bg-[color:var(--panel)] text-[color:var(--accent)]`:'text-muted'}`}>{children}</NavLink>;
+const NavItem = ({ to, children }) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) => `px-3 py-2 rounded-2xl text-sm font-medium border transition-colors ${isActive ? 'text-black dark:text-white border-black/10 dark:border-white/15 bg-white dark:bg-black' : 'text-neutral-500 dark:text-neutral-400 border-transparent hover:bg-black/5 dark:hover:bg-white/5'}`}
+  >
+    {children}
+  </NavLink>
+);
 
 export default function LayoutShell(){
   const { user, logout } = useAuth();
@@ -31,13 +38,13 @@ export default function LayoutShell(){
   },[theme]);
 
   return (
-  <div className="min-h-screen flex flex-col pb-20 md:pb-0 transition-colors duration-200">{/* pb for mobile bottom bar space */}
-      <header className="border-b bg-opacity-40 backdrop-blur sticky top-0 z-20" style={{borderColor:'rgba(255,255,255,0.04)'}}>
+  <div className="min-h-screen flex flex-col pb-20 md:pb-0 transition-colors duration-200 bg-subtle-gradient">{/* pb for mobile bottom bar space */}
+      <header className="border-b sticky top-0 z-20 bg-white/70 dark:bg-black/40 glass" style={{borderColor:'var(--panel-border)'}}>
         <div className="max-w-5xl mx-auto flex items-center gap-4 px-4 h-14">
           <div className="flex items-center gap-3 font-semibold text-lg">
-            <img src="/logo.png" alt="Pawster logo" className="w-10 h-10 rounded-lg shadow-sm" />
+            <img src="/logo.png" alt="Pawster logo" className="w-10 h-10 rounded-2xl shadow-sm" />
             <span className="sr-only">Pawster</span>
-            <div className="hidden sm:block text-lg font-semibold">Paw<span className="text-violet-400">ster</span></div>
+            <div className="hidden sm:block text-lg font-semibold text-black dark:text-white">Pawster</div>
           </div>
           <nav className="hidden md:flex gap-2">
             <NavItem to="/">Feed</NavItem>
@@ -55,7 +62,7 @@ export default function LayoutShell(){
             )}
           </nav>
           <div className="ml-auto flex items-center gap-3">
-            <button aria-label="Chuyển nền sáng/tối" title="Toggle theme" onClick={()=>setTheme(t=>t==='light'?'dark':'light')} className="px-2 py-1 rounded-md border border-transparent hover:border-black/6 dark:hover:border-white/10 transition pop bg-transparent">
+            <button aria-label="Chuyển nền sáng/tối" title="Toggle theme" onClick={()=>setTheme(t=>t==='light'?'dark':'light')} className="px-2.5 py-1.5 rounded-2xl border border-black/10 dark:border-white/15 text-sm hover:bg-black/5 dark:hover:bg-white/5 transition pop bg-transparent">
               {theme==='light' ? '🌙' : '🌞'}
             </button>
             {user && (
@@ -85,9 +92,9 @@ export default function LayoutShell(){
                 )}
                 <button onClick={()=>setOpenMenu(v=>!v)} className="px-2 py-1 text-xs border rounded">▼</button>
                 {openMenu && (
-                  <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg p-2 text-sm bg-white dark:bg-[#111318] border" style={{borderColor:'var(--panel-border)'}}>
-                    <button onClick={()=>{ setOpenPwd(true); setOpenMenu(false); }} className="w-full text-left px-3 py-2 rounded hover:bg-black/5 dark:hover:bg-white/5">Đổi mật khẩu</button>
-                    <button onClick={()=>{ logout(); navigate('/login'); }} className="w-full text-left px-3 py-2 rounded hover:bg-black/5 dark:hover:bg-white/5">Đăng xuất</button>
+                  <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl shadow-lg p-2 text-sm bg-white dark:bg-[#111318] border" style={{borderColor:'var(--panel-border)'}}>
+                    <button onClick={()=>{ setOpenPwd(true); setOpenMenu(false); }} className="w-full text-left px-3 py-2 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5">Đổi mật khẩu</button>
+                    <button onClick={()=>{ logout(); navigate('/login'); }} className="w-full text-left px-3 py-2 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5">Đăng xuất</button>
                   </div>
                 )}
               </div>

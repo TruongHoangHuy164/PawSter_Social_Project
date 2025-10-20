@@ -30,9 +30,9 @@ export default function QR(){
     <div className="max-w-xl mx-auto p-4 space-y-6">
       <h1 className="text-lg font-semibold">Kết bạn qua QR</h1>
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="space-y-4 card p-5 rounded">
+        <div className="space-y-4 card p-5 rounded-2xl">
           <h2 className="font-medium">Tạo mã QR của bạn</h2>
-          <button onClick={createQR} disabled={loading} className="px-4 py-2 rounded bg-gradient-to-r from-violet-600 to-violet-500 disabled:opacity-50 text-sm font-medium text-white">{loading? 'Đang tạo...' : 'Tạo QR'}</button>
+          <button onClick={createQR} disabled={loading} className="px-4 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 text-sm font-medium">{loading? 'Đang tạo...' : 'Tạo QR'}</button>
           {qr && (
             <div className="space-y-2 text-center">
               <img src={qr.qr} alt="qr" className="mx-auto w-48 h-48 rounded bg-white p-2" />
@@ -41,11 +41,11 @@ export default function QR(){
             </div>
           )}
         </div>
-        <div className="space-y-4 card p-5 rounded">
+        <div className="space-y-4 card p-5 rounded-2xl">
           <h2 className="font-medium">Nhập token bạn bè</h2>
-          <textarea rows={4} value={tokenInput} onChange={e=>setTokenInput(e.target.value)} placeholder="Dán token QR..." className="w-full bg-white border border-neutral-200 focus:ring-2 focus:ring-[color:var(--accent)] rounded p-2" />
-          <button onClick={sendRequest} disabled={loading || !tokenInput.trim()} className="px-4 py-2 rounded bg-gradient-to-r from-emerald-600 to-emerald-500 disabled:opacity-50 text-sm font-medium text-white">Gửi yêu cầu</button>
-          {message && <div className="text-xs text-violet-400">{message}</div>}
+          <textarea rows={4} value={tokenInput} onChange={e=>setTokenInput(e.target.value)} placeholder="Dán token QR..." className="w-full bg-transparent border border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 rounded-2xl p-2" />
+          <button onClick={sendRequest} disabled={loading || !tokenInput.trim()} className="px-4 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 text-sm font-medium">Gửi yêu cầu</button>
+          {message && <div className="text-xs text-neutral-500">{message}</div>}
         </div>
       </div>
     </div>

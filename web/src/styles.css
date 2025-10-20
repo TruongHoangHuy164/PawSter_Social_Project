@@ -3,27 +3,22 @@
 @tailwind utilities;
 
 :root{
-	/* Light theme (default) - pastel pink motif */
-	--bg: #fff6fb; /* soft pastel pink background */
-	--panel: #ffffff; /* panels remain white for contrast */
-	--panel-inner: #fff0f6; /* inner panel soft pastel pink */
-	--muted: #9b6372; /* muted rose */
-	--text: #2b1b22; /* deep warm charcoal for readability */
-	--accent: #ff79b0; /* pastel pink accent */
-	--pet-accent: #f4c36b; /* warm gold for pet theme */
-	--pet-accent-2: #a78bfa; /* soft violet for luxury blend */
-	--panel-border: rgba(43,27,34,0.06);
+	/* Light theme - strict minimal black/white */
+	--bg: #ffffff;
+	--panel: #ffffff;
+	--panel-inner: #ffffff;
+	--muted: #6b7280; /* neutral-500 */
+	--text: #0a0a0a; /* near-black */
+	--panel-border: rgba(0,0,0,0.08);
 }
 .dark{
-	/* dark theme keeps contrast but uses warmer tones */
-	--bg: #0b0710;
-	--panel: #0f0d12;
-	--muted: #8f6b76;
-	--text: #f6ecf0;
-	--accent: #ff9fc6; /* lighter pink for dark */
-	--pet-accent: #f1c27d;
-	--pet-accent-2: #8b5cf6;
-	--panel-border: rgba(255,255,255,0.04);
+	/* Dark theme - pure black with soft white text */
+	--bg: #000000;
+	--panel: #0a0a0a;
+	--panel-inner: #0a0a0a;
+	--muted: #9ca3af; /* neutral-400 */
+	--text: #fafafa; /* near-white */
+	--panel-border: rgba(255,255,255,0.12);
 }
 body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); transition: background-color 220ms ease, color 220ms ease; }
 
@@ -35,58 +30,31 @@ body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 .fade-in { animation: fade 0.3s ease; }
 @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform: translateY(0);} }
 
-/* Soft card & glass style */
-.card { background: var(--panel-inner); border: 1px solid var(--panel-border); box-shadow: 0 8px 30px rgba(2,6,23,0.06); }
+/* Minimal card */
+.card { background: var(--panel-inner); border: 1px solid var(--panel-border); border-radius: 20px; box-shadow: 0 6px 24px rgba(0,0,0,0.05); }
 
-/* Lux gradient bordered card */
-.lux-card {
-	position: relative;
-	border: 1px solid transparent;
-	background:
-		linear-gradient(var(--panel-inner), var(--panel-inner)) padding-box,
-		linear-gradient(135deg, color-mix(in srgb, var(--accent) 40%, white), color-mix(in srgb, var(--pet-accent) 40%, white)) border-box;
-	box-shadow: 0 10px 30px rgba(0,0,0,0.06), 0 2px 10px rgba(0,0,0,0.04);
-	border-radius: 0.75rem;
+/* Glass minimalist */
+.glass {
+	background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+	-webkit-backdrop-filter: blur(8px);
+	backdrop-filter: blur(8px);
 }
 
-/* Subtle paw watermark background */
-.paw-bg {
-	--paw-color: color-mix(in srgb, var(--pet-accent) 16%, transparent);
-	background-image:
-		radial-gradient(circle at 10px 10px, var(--paw-color) 2px, transparent 2.5px),
-		radial-gradient(circle at 18px 10px, var(--paw-color) 2px, transparent 2.5px),
-		radial-gradient(circle at 14px 6px, var(--paw-color) 2.2px, transparent 2.7px),
-		radial-gradient(circle at 14px 16px, var(--paw-color) 3.8px, transparent 4.3px);
-	background-size: 64px 64px;
-	background-position: 0 0, 0 0, 0 0, 0 0;
-}
+/* Remove decorative paw bg for strict minimal */
+.paw-bg { background: transparent; }
 
-/* Lux buttons */
-.btn-lux {
-	background: linear-gradient(135deg, var(--accent), var(--pet-accent));
-	color: #fff;
-	border-radius: 0.65rem;
-	padding: 0.55rem 1rem;
-	box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 30%, transparent);
-}
-.btn-lux:hover { filter: brightness(0.98); transform: translateY(-1px); }
+/* Buttons */
+.btn-lux { background: #0a0a0a; color: #fff; border-radius: 1rem; padding: 0.55rem 1rem; }
+.dark .btn-lux { background: #ffffff; color: #000; }
+.btn-lux:hover { filter: none; transform: translateY(-1px); }
 .btn-lux:active { transform: translateY(0); }
 
 /* Pills and chips */
-.pill {
-	padding: 0.25rem 0.6rem;
-	border-radius: 999px;
-	border: 1px solid var(--panel-border);
-	background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--panel) 85%, #000000 0%));
-}
+.pill { padding: 0.25rem 0.6rem; border-radius: 999px; border: 1px solid var(--panel-border); background: #ffffff; }
+.dark .pill { background: #0a0a0a; }
 
-/* Tiny paw icon via inline mask */
-.paw-icon {
-	width: 1em; height: 1em; display: inline-block; vertical-align: -0.125em;
-	background: currentColor;
-	-webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.5 8.5a2.5 2.5 0 1 1 5 0a2.5 2.5 0 1 1-5 0Zm8 0a2.5 2.5 0 1 1 5 0a2.5 2.5 0 1 1-5 0ZM8.5 16.5c0-3 3-5 3-5s3 2 3 5c0 2-1.5 3.5-3 3.5s-3-1.5-3-3.5Zm-6-2a2 2 0 1 1 4 0a2 2 0 1 1-4 0Zm15 0a2 2 0 1 1 4 0a2 2 0 1 1-4 0Z"/></svg>') center / contain no-repeat;
-					mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.5 8.5a2.5 2.5 0 1 1 5 0a2.5 2.5 0 1 1-5 0Zm8 0a2.5 2.5 0 1 1 5 0a2.5 2.5 0 1 1-5 0ZM8.5 16.5c0-3 3-5 3-5s3 2 3 5c0 2-1.5 3.5-3 3.5s-3-1.5-3-3.5Zm-6-2a2 2 0 1 1 4 0a2 2 0 1 1-4 0Zm15 0a2 2 0 1 1 4 0a2 2 0 1 1-4 0Z"/></svg>') center / contain no-repeat;
-}
+/* Remove paw icon mask for minimal */
+.paw-icon { display:none; }
 
 /* container and helpers */
 .container { max-width: 1024px; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
@@ -114,25 +82,20 @@ input::placeholder, textarea::placeholder {
 }
 
 /* Headings and labels inside cards should be high contrast */
-.card h1, .card h2, .card h3 {
-	color: #000; /* black headings inside panels */
-	opacity: 1;
-	font-weight: 800;
-	font-size: 1.25rem;
-}
+.card h1, .card h2, .card h3 { color: #000; opacity: 1; font-weight: 700; font-size: 1.125rem; }
 .card label, .card .label {
-	color: #000; /* black labels for readability */
-	font-size: 0.98rem;
+	color: #000;
+	font-size: 0.95rem;
 	font-weight: 600;
 }
 
 /* Ensure normal inputs inherit theme text color */
-input, textarea, select {
-  color: #000; /* black text inside inputs */
-}
+input, textarea, select { color: #000; }
+.dark input, .dark textarea, .dark select { color: #fff; }
 
 /* Increase base text size inside cards/panels */
 .card, .page-panel { font-size: 1rem; color: #000; }
+.dark .card, .dark .page-panel { color: #fff; }
 
 /* make small subtitle neutrals inside cards visible */
 .card .text-neutral-400 { color: var(--muted) !important; }
@@ -144,11 +107,14 @@ input, textarea, select {
 @keyframes float { 0%{ transform: translateY(0);} 50%{ transform: translateY(-4px);} 100%{ transform: translateY(0);} }
 
 /* Buttons and accent elements use the new accent color */
-.btn-accent { background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #ffffff)); color: white; border-radius: 8px; padding: 0.5rem 0.9rem; }
-.btn-accent:hover { filter: brightness(0.95); }
+.btn-accent { background: #0a0a0a; color: white; border-radius: 14px; padding: 0.5rem 0.9rem; }
+.dark .btn-accent { background: #ffffff; color: #000; }
+.btn-accent:hover { opacity: .9; }
 
 /* form input backgrounds and borders adjusted for pastel theme */
-input, textarea, select {
-	background: #ffffff; /* keep inputs white for clarity */
-	border: 1px solid rgba(43,27,34,0.06);
-}
+input, textarea, select { background: #ffffff; border: 1px solid var(--panel-border); border-radius: 16px; }
+.dark input, .dark textarea, .dark select { background: #0a0a0a; }
+
+/* Subtle gradient page background for depth */
+.bg-subtle-gradient { background: linear-gradient(180deg, rgba(0,0,0,.02), transparent 30%); }
+
