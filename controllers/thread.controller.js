@@ -537,6 +537,22 @@ export const likeThread = asyncHandler(async (req, res) => {
     User.updateOne({ _id: userId }, { $addToSet: { likedThreads: threadId } }),
   ]);
 
+  // Notify thread author if someone else liked their post
+  try {
+    if (String(thread.author) !== String(userId) && req.io) {
+      const { notify } = await import("../utils/notifications.js");
+      await notify({
+        io: req.io,
+        userId: thread.author,
+        actorId: userId,
+        type: "like_thread",
+        threadId: thread._id,
+      });
+    }
+  } catch (e) {
+    console.warn("Thread like notification failed:", e?.message || e);
+  }
+
   res.json({ success: true, message: "Thread liked" });
 });
 
@@ -586,6 +602,22 @@ export const repostThread = asyncHandler(async (req, res) => {
       { $addToSet: { repostedThreads: threadId } }
     ),
   ]);
+
+  // Notify thread author if someone reposted
+  try {
+    if (String(thread.author) !== String(userId) && req.io) {
+      const { notify } = await import("../utils/notifications.js");
+      await notify({
+        io: req.io,
+        userId: thread.author,
+        actorId: userId,
+        type: "repost_thread",
+        threadId: thread._id,
+      });
+    }
+  } catch (e) {
+    console.warn("Thread repost notification failed:", e?.message || e);
+  }
 
   res.json({ success: true, message: "Thread reposted" });
 });

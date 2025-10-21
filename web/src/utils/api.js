@@ -206,3 +206,16 @@ export const userApi = {
     return request(`/users/${userId}/follow`, "DELETE", undefined, token);
   },
 };
+
+// Notifications API
+export const notificationApi = {
+  list: (cursor, limit = 20, token) => {
+    const params = new URLSearchParams();
+    if (cursor) params.set("cursor", cursor);
+    if (limit) params.set("limit", String(limit));
+    const qs = params.toString();
+    return request(`/notifications${qs ? `?${qs}` : ""}`, "GET", undefined, token);
+  },
+  markRead: (id, token) => request(`/notifications/${id}/read`, "POST", undefined, token),
+  markAll: (token) => request(`/notifications/read-all`, "POST", undefined, token),
+};

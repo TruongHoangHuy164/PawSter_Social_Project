@@ -434,6 +434,20 @@ export const acceptFriend = asyncHandler(async (req, res) => {
   toUser.friends.push(fromUser._id);
   fr.status = "accepted";
   await Promise.all([fromUser.save(), toUser.save(), fr.save()]);
+  // Notify requester that their friend request was accepted
+  try {
+    if (req.io) {
+      const { notify } = await import("../utils/notifications.js");
+      await notify({
+        io: req.io,
+        userId: fromUser._id,
+        actorId: toUser._id,
+        type: "friend_accepted",
+      });
+    }
+  } catch (e) {
+    console.warn("Friend accepted notification failed:", e?.message || e);
+  }
   res.json({ success: true, message: "Friend request accepted" });
 });
 
@@ -578,7 +592,20 @@ export const followUser = asyncHandler(async (req, res) => {
     { _id: targetId },
     { $addToSet: { followers: req.user._id } }
   );
-
+  // Notify the target user that they are followed
+  try {
+    if (req.io) {
+      const { notify } = await import("../utils/notifications.js");
+      await notify({
+        io: req.io,
+        userId: targetId,
+        actorId: req.user._id,
+        type: "follow",
+      });
+    }
+  } catch (e) {
+    console.warn("Follow notification failed:", e?.message || e);
+  }
   res.json({ success: true, message: "Followed successfully" });
 });
 

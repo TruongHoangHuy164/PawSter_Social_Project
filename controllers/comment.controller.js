@@ -118,7 +118,7 @@ export const createComment = asyncHandler(async (req, res) => {
       sanitized.media = sanitized.media.map(({ key, type, mimeType, size, _id }) => ({ _id, key, type, mimeType, size }));
     }
 
-    // Emit real-time update
+  // Emit real-time update
     if (req.io) {
       console.log('📡 Emitting new_comment to thread:', threadId, 'parentId:', parentId || 'none');
       
@@ -153,6 +153,41 @@ export const createComment = asyncHandler(async (req, res) => {
       }, 100);
     } else {
       console.log('❌ No io instance available for WebSocket emit');
+    }
+
+    // Notifications
+    try {
+      const { notify } = await import("../utils/notifications.js");
+      // Notify thread author on new top-level comment (avoid notifying self)
+      if (thread && String(thread.author) !== String(req.user._id)) {
+        await notify({
+          io: req.io,
+          userId: thread.author,
+          actorId: req.user._id,
+          type: "comment",
+          threadId: thread._id,
+          commentId: comment._id,
+          meta: { parentId: parentId || null },
+        });
+      }
+      // If replying to a comment, also notify parent comment author (if different from actor and thread author)
+      if (parentId) {
+        const parentComment = sanitized.parentId || (await Comment.findById(parentId));
+        const parentAuthor = parentComment?.author?._id || parentComment?.author;
+        if (parentAuthor && String(parentAuthor) !== String(req.user._id) && String(parentAuthor) !== String(thread.author)) {
+          await notify({
+            io: req.io,
+            userId: parentAuthor,
+            actorId: req.user._id,
+            type: "comment",
+            threadId: thread._id,
+            commentId: comment._id,
+            meta: { parentId },
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Comment notification failed:", e?.message || e);
     }
 
     res.status(201).json({ success: true, data: sanitized });
@@ -334,6 +369,24 @@ export const toggleLike = asyncHandler(async (req, res) => {
       likesCount: comment.likesCount,
       userId: req.user._id
     });
+  }
+
+  // Notification: notify comment author when their comment is liked
+  try {
+    if (!isLiked && String(comment.author) !== String(req.user._id)) {
+      const { notify } = await import("../utils/notifications.js");
+      await notify({
+        io: req.io,
+        userId: comment.author,
+        actorId: req.user._id,
+        type: "like_comment",
+        threadId: comment.threadId,
+        commentId: comment._id,
+        meta: { target: "comment" },
+      });
+    }
+  } catch (e) {
+    console.warn("Comment like notification failed:", e?.message || e);
   }
 
   res.json({

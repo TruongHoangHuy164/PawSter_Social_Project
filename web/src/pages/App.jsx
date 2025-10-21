@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "../state/auth.jsx";
 import { SocketProvider } from "../state/socket.jsx";
+import { NotificationsProvider } from "../state/notifications.jsx";
 import {
   Feed,
   Login,
@@ -41,7 +42,8 @@ export default function App() {
   return (
     <AuthProvider>
       <SocketProvider>
-        <Routes>
+        <NotificationsProvider>
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route element={<LayoutShell />}>
@@ -145,7 +147,8 @@ export default function App() {
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+        </NotificationsProvider>
       </SocketProvider>
     </AuthProvider>
   );

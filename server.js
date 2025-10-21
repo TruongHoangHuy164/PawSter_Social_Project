@@ -69,6 +69,7 @@ import mediaRoutes from "./routes/media.routes.js";
 import messageRoutes from "./routes/message.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import adminBootstrapRoutes from "./routes/adminBootstrap.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
 import { verifyS3Connection } from "./utils/s3.js";
@@ -176,6 +177,7 @@ app.use("/api/media", mediaRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin-bootstrap", adminBootstrapRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // 404
 app.use((req, res) => {

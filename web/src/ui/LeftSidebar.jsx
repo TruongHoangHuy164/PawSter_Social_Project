@@ -13,6 +13,7 @@ import {
   BellIcon as BellSolid 
 } from '@heroicons/react/24/solid';
 import { useAuth } from '../state/auth.jsx';
+import { useNotifications } from '../state/notifications.jsx';
 import Avatar from './Avatar.jsx';
 import ProBadge from './ProBadge.jsx';
 import ChangePasswordModal from '../pages/ChangePasswordModal.jsx';
@@ -25,20 +26,24 @@ const AddIcon = () => <PlusCircleIcon className="w-6 h-6" />;
 const NotificationIcon = ({ active }) => active ? <BellSolid className={iconClasses} /> : <BellOutline className={iconClasses} />;
 const UserIcon = () => <UserCircleIcon className={iconClasses} />;
 
-const Item = ({ to, label, Icon }) => (
+const Item = ({ to, label, Icon, rightAddon }) => (
   <NavLink
     to={to}
-    className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-2xl text-sm transition border ${isActive ? 'text-black dark:text-white bg-white dark:bg-black border-black/10 dark:border-white/15' : 'text-neutral-500 dark:text-neutral-400 border-transparent hover:bg-black/5 dark:hover:bg-white/5'}`}
+    className={({ isActive }) => `flex items-center justify-between gap-3 px-3 py-2 rounded-2xl text-sm transition border ${isActive ? 'text-black dark:text-white bg-white dark:bg-black border-black/10 dark:border-white/15' : 'text-neutral-500 dark:text-neutral-400 border-transparent hover:bg-black/5 dark:hover:bg-white/5'}`}
   >
     {({ isActive }) => <>
-      <Icon active={isActive} />
-      <span>{label}</span>
+      <span className="flex items-center gap-3">
+        <Icon active={isActive} />
+        <span>{label}</span>
+      </span>
+      {rightAddon}
     </>}
   </NavLink>
 );
 
 export default function LeftSidebar({ onAdd, theme, setTheme }) {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState(false);
   const [openPwd, setOpenPwd] = useState(false);
@@ -149,7 +154,16 @@ export default function LeftSidebar({ onAdd, theme, setTheme }) {
           <AddIcon />
           <span>Tạo bài viết</span>
         </button>
-        <Item to="/notification" label="Thông báo" Icon={NotificationIcon} />
+        <Item 
+          to="/notification" 
+          label="Thông báo" 
+          Icon={NotificationIcon}
+          rightAddon={unreadCount > 0 ? (
+            <span className="relative inline-flex">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_0_2px_rgba(255,255,255,0.8)] dark:shadow-[0_0_0_2px_rgba(0,0,0,0.8)]" />
+            </span>
+          ) : null}
+        />
         <Item to="/profile" label="Tôi" Icon={UserIcon} />
       </nav>
 
