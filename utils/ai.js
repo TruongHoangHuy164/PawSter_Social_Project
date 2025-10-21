@@ -4,6 +4,8 @@
 // Example (PowerShell): $env:OPENROUTER_API_KEY="sk-or-v1-..."; npm run dev
 
 import axios from "axios";
+import http from "http";
+import https from "https";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1";
@@ -18,6 +20,13 @@ const MOD_FAILSAFE_FLAG = String(process.env.MOD_FAILSAFE_FLAG || "0") === "1";
 // These headers are encouraged by OpenRouter for attribution
 const REFERER = process.env.APP_URL || process.env.FRONTEND_URL || "http://localhost:3000";
 const TITLE = process.env.APP_NAME || "PawSter";
+
+// Performance knobs (optional)
+const MOD_TEXT_AI_ONLY_IF_REGEX = String(process.env.MOD_TEXT_AI_ONLY_IF_REGEX || "0") === "1"; // call text AI only if regex hits
+const MOD_IMAGE_AI_ONLY_IF_REKOGNITION_FLAGGED = String(process.env.MOD_IMAGE_AI_ONLY_IF_REKOGNITION_FLAGGED || "0") === "1"; // vision AI only if rekognition raised concerns
+const MOD_IMAGE_MAX = Math.max(1, Number(process.env.MOD_IMAGE_MAX || 6)); // limit images per call
+const MOD_TEXT_MAX_TOKENS = Math.max(64, Number(process.env.MOD_TEXT_MAX_TOKENS || 160));
+const MOD_IMAGE_MAX_TOKENS = Math.max(128, Number(process.env.MOD_IMAGE_MAX_TOKENS || 220));
 
 function ensureConfigured() {
   if (!OPENROUTER_API_KEY) {
@@ -38,9 +47,13 @@ function buildHeaders(extra = {}) {
   };
 }
 
+const agentHttp = new http.Agent({ keepAlive: true, maxSockets: 50 });
+const agentHttps = new https.Agent({ keepAlive: true, maxSockets: 50 });
 const client = axios.create({
   baseURL: OPENROUTER_BASE_URL,
   timeout: 60_000,
+  httpAgent: agentHttp,
+  httpsAgent: agentHttps,
 });
 
 /**
@@ -172,11 +185,11 @@ function regexCategories(text) {
  * Thresholds can be customized via env: MOD_SOFT=0.6, MOD_HARD=0.85
  */
 export async function moderateContent({ text, imageKeys = [], imageUrls = [] }) {
-  // 1) Text moderation (regex + AI classifier)
-  const textRes = await moderateText({ text });
-
-  // 2) Image moderation (Rekognition + AI vision)
-  const imgRes = await checkImageSensitivity({ imageKeys, imageUrls });
+  // Run text and image moderation in parallel to reduce latency
+  const [textRes, imgRes] = await Promise.all([
+    moderateText({ text }),
+    checkImageSensitivity({ imageKeys, imageUrls }),
+  ]);
 
   // 3) Aggregate
   const soft = Number(process.env.MOD_SOFT || 0.6);
@@ -212,27 +225,30 @@ export async function moderateText({ text }) {
   let aiCats = [];
   let aiNotes = "";
   try {
-    const sys = [
-      "Bạn là hệ thống kiểm duyệt văn bản (tiếng Việt có/không dấu).",
-      "Trả về JSON: {\"score\": number 0..1, \"categories\": [violence_hard|violence_soft|sexual_explicit|self_harm|hate|harassment|safe], \"decision\": \"APPROVE|FLAG|REJECT\" }",
-      "REJECT: gore/hiếp dâm/ấu dâm/khiêu dâm rõ ràng/hướng dẫn tự hại. FLAG: bạo lực nhẹ/gợi dục/nhắc tự hại/chửi tục/đe doạ.",
-    ].join(" \n");
-    const prompt = `Văn bản:\n${text || "(không có)"}`;
-    const { text: out } = await chat({
-      messages: [
-        { role: "system", content: sys },
-        { role: "user", content: prompt },
-      ],
-      model: TEXT_MODERATION_MODEL,
-      temperature: 0,
-      max_tokens: 250,
-    });
-    const match = out.match(/\{[\s\S]*\}/);
-    if (match) {
-      const parsed = JSON.parse(match[0]);
-      aiScore = Number(parsed.score) || 0;
-      aiCats = Array.isArray(parsed.categories) ? parsed.categories : [];
-      aiNotes = parsed.decision || "";
+    // Skip AI call for text if configured and regex found nothing
+    if (!(MOD_TEXT_AI_ONLY_IF_REGEX && catsRegex.length === 0)) {
+      const sys = [
+        "Bạn là hệ thống kiểm duyệt văn bản (tiếng Việt có/không dấu).",
+        "Trả về JSON: {\"score\": number 0..1, \"categories\": [violence_hard|violence_soft|sexual_explicit|self_harm|hate|harassment|safe], \"decision\": \"APPROVE|FLAG|REJECT\" }",
+        "REJECT: gore/hiếp dâm/ấu dâm/khiêu dâm rõ ràng/hướng dẫn tự hại. FLAG: bạo lực nhẹ/gợi dục/nhắc tự hại/chửi tục/đe doạ.",
+      ].join(" \n");
+      const prompt = `Văn bản:\n${text || "(không có)"}`;
+      const { text: out } = await chat({
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: prompt },
+        ],
+        model: TEXT_MODERATION_MODEL,
+        temperature: 0,
+        max_tokens: MOD_TEXT_MAX_TOKENS,
+      });
+      const match = out.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        aiScore = Number(parsed.score) || 0;
+        aiCats = Array.isArray(parsed.categories) ? parsed.categories : [];
+        aiNotes = parsed.decision || "";
+      }
     }
   } catch {}
 
@@ -265,6 +281,7 @@ export async function checkImageSensitivity({ imageKeys = [], imageUrls = [] } =
   const results = [];
 
   // 1) Rekognition for S3 keys (optional)
+  let rekognitionMaxScore = 0;
   if (process.env.MOD_USE_REKOGNITION === "1" && imageKeys.length) {
     try {
       const mod = await import("@aws-sdk/client-rekognition");
@@ -301,6 +318,7 @@ export async function checkImageSensitivity({ imageKeys = [], imageUrls = [] } =
             if (score >= hard) decision = "REJECT";
             else if (score >= soft) decision = "FLAG";
             results.push({ key, score, categories: Array.from(cats).length ? Array.from(cats) : ["safe"], decision, source: "rekognition", raw: labels });
+            rekognitionMaxScore = Math.max(rekognitionMaxScore, score);
           } catch {}
         }
       }
@@ -310,7 +328,10 @@ export async function checkImageSensitivity({ imageKeys = [], imageUrls = [] } =
   }
 
   // 2) AI Vision for URLs (if provided)
-  if (Array.isArray(imageUrls) && imageUrls.length) {
+  const aiShouldRun = Array.isArray(imageUrls) && imageUrls.length && (
+    !MOD_IMAGE_AI_ONLY_IF_REKOGNITION_FLAGGED || rekognitionMaxScore >= soft
+  );
+  if (aiShouldRun) {
     try {
       const sys = [
         "Bạn là hệ thống kiểm duyệt hình ảnh. Phân loại CHI TIẾT theo danh mục sau và quy đổi về nhóm tổng quát:",
@@ -323,15 +344,15 @@ export async function checkImageSensitivity({ imageKeys = [], imageUrls = [] } =
         "Quy tắc quyết định: REJECT cho nudity_explicit/sexual_activity/violence_graphic/ấu dâm; FLAG cho nudity_partial/sexual_context/violence_non_graphic/hate_symbols.",
         "CHỈ trả về JSON hợp lệ (mảng)."
       ].join(" \n");
-      const prompt = `Phân tích ảnh (URL có thời hạn):\n${imageUrls.slice(0, 6).join("\n")}`;
+  const prompt = `Phân tích ảnh (URL có thời hạn):\n${imageUrls.slice(0, MOD_IMAGE_MAX).join("\n")}`;
       // Try multiple content encodings to satisfy different providers
       const variants = [
         // OpenAI-style (object)
-        imageUrls.slice(0, 6).map((u) => ({ type: "image_url", image_url: { url: u } })),
+        imageUrls.slice(0, MOD_IMAGE_MAX).map((u) => ({ type: "image_url", image_url: { url: u } })),
         // OpenAI-style (string)
-        imageUrls.slice(0, 6).map((u) => ({ type: "image_url", image_url: u })),
+        imageUrls.slice(0, MOD_IMAGE_MAX).map((u) => ({ type: "image_url", image_url: u })),
         // OpenRouter legacy style
-        imageUrls.slice(0, 6).map((u) => ({ type: "input_image", image_url: u })),
+        imageUrls.slice(0, MOD_IMAGE_MAX).map((u) => ({ type: "input_image", image_url: u })),
       ];
 
       let parsed = null;
@@ -349,7 +370,7 @@ export async function checkImageSensitivity({ imageKeys = [], imageUrls = [] } =
             ],
             model: IMAGE_MODERATION_MODEL,
             temperature: 0,
-            max_tokens: 500,
+            max_tokens: MOD_IMAGE_MAX_TOKENS,
           });
           const match = out.match(/\[[\s\S]*\]/);
           if (match) parsed = JSON.parse(match[0]);
