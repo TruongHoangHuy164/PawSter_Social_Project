@@ -7,6 +7,7 @@ import {
   getSignedMediaUrl,
 } from "../utils/s3.js";
 import crypto from "crypto";
+import { moderation } from "../utils/ai.js";
 
 function detectType(mime) {
   if (!mime) return "other";
@@ -125,12 +126,65 @@ export const createThread = asyncHandler(async (req, res) => {
 
   try {
     const tags = extractTags(content);
+
+    // --- Auto moderation: analyze content and media hints ---
+    const imageKeys = (uploaded || [])
+      .filter((m) => m.type === "image")
+      .map((m) => m.key);
+    // Generate short-lived signed URLs so the AI model can truly inspect images
+    const imageUrls = await Promise.all(
+      imageKeys.slice(0, 6).map(async (key) => {
+        try {
+          // give vision model more time to pull the image (600s)
+          return await getSignedMediaUrl(key, 600);
+        } catch {
+          return null;
+        }
+      })
+    );
+  const mod = await moderation.moderateContent({ text: content, imageKeys, imageUrls: imageUrls.filter(Boolean) });
+    let status = "APPROVED";
+    if (mod.action === "REJECT") {
+      const hardPolicy = (process.env.MOD_HARD_POLICY || "flag").toLowerCase();
+      if (hardPolicy === "block") {
+        // Rollback media and block creation
+        if (uploaded.length) {
+          deleteMediaKeys(uploaded.map((u) => u.key)).catch(() => {});
+        }
+        return res.status(400).json({
+          success: false,
+          message: "Nội dung vi phạm quy chuẩn. Bài viết đã bị chặn.",
+          moderation: mod,
+        });
+      }
+      // Else downgrade to FLAGGED per policy
+      status = "FLAGGED";
+    } else if (mod.action === "FLAG") {
+      status = "FLAGGED"; // allow but hidden/limited in UI until reviewed
+    }
+    // Map per-image moderation results to media array by order of uploaded images
+    const perImage = (mod?.images?.images || []).filter((r) => r.source === "ai" || r.source === "rekognition");
+    let imageCursor = 0;
+    const uploadedWithModeration = uploaded.map((m) => {
+      if (m.type !== "image") return m;
+      const imgRes = perImage[imageCursor++] || null;
+      if (!imgRes) return m;
+      return { ...m, moderation: { score: Number(imgRes.score) || 0, decision: imgRes.decision || "APPROVE", categories: Array.isArray(imgRes.categories) ? imgRes.categories : [] } };
+    });
+
     let thread = await Thread.create({
       author: req.user._id,
       content,
-      media: uploaded,
+      media: uploadedWithModeration,
       parent: null,
       tags,
+      status,
+      moderation: {
+        autoFlagScore: mod.score,
+        categories: mod.categories,
+        action: mod.action,
+        notes: mod.notes,
+      },
     });
     // populate author to include avatarKey for signing url
     thread = await thread.populate("author", "username isPro badges avatarKey");
@@ -146,15 +200,7 @@ export const createThread = asyncHandler(async (req, res) => {
       }
     }
     if (sanitized.media) {
-      sanitized.media = sanitized.media.map(
-        ({ key, type, mimeType, size, _id }) => ({
-          _id,
-          key,
-          type,
-          mimeType,
-          size,
-        })
-      );
+      sanitized.media = sanitized.media.map(({ key, type, mimeType, size, _id, moderation }) => ({ _id, key, type, mimeType, size, moderation }));
     }
     res.status(201).json({ success: true, data: sanitized });
   } catch (e) {
@@ -171,7 +217,7 @@ export const createThread = asyncHandler(async (req, res) => {
 
 export const listThreads = asyncHandler(async (req, res) => {
   // Support filtering by author userId via query param ?author=userId
-  const filter = {};
+  const filter = { status: { $ne: "REJECTED" } };
   if (req.query.author) {
     filter.author = req.query.author;
   }
@@ -343,12 +389,55 @@ export const createReply = asyncHandler(async (req, res) => {
   }
   try {
     const tags = extractTags(content);
+
+    // Auto moderation for replies as well
+    const imageKeys = (uploaded || [])
+      .filter((m) => m.type === "image")
+      .map((m) => m.key);
+    const imageUrls = await Promise.all(
+      imageKeys.slice(0, 6).map(async (key) => {
+        try {
+          return await getSignedMediaUrl(key, 600);
+        } catch {
+          return null;
+        }
+      })
+    );
+  const mod = await moderation.moderateContent({ text: content, imageKeys, imageUrls: imageUrls.filter(Boolean) });
+    let status = "APPROVED";
+    if (mod.action === "REJECT") {
+      const hardPolicy = (process.env.MOD_HARD_POLICY || "flag").toLowerCase();
+      if (hardPolicy === "block") {
+        if (uploaded.length) deleteMediaKeys(uploaded.map((u) => u.key)).catch(() => {});
+        return res.status(400).json({ success: false, message: "Nội dung vi phạm. Bình luận bị chặn.", moderation: mod });
+      }
+      status = "FLAGGED";
+    } else if (mod.action === "FLAG") {
+      status = "FLAGGED";
+    }
+
+    const perImage = (mod?.images?.images || []).filter((r) => r.source === "ai" || r.source === "rekognition");
+    let imageCursor = 0;
+    const uploadedWithModeration = uploaded.map((m) => {
+      if (m.type !== "image") return m;
+      const imgRes = perImage[imageCursor++] || null;
+      if (!imgRes) return m;
+      return { ...m, moderation: { score: Number(imgRes.score) || 0, decision: imgRes.decision || "APPROVE", categories: Array.isArray(imgRes.categories) ? imgRes.categories : [] } };
+    });
+
     let reply = await Thread.create({
       author: req.user._id,
       content,
-      media: uploaded,
+      media: uploadedWithModeration,
       parent: parentId,
       tags,
+      status,
+      moderation: {
+        autoFlagScore: mod.score,
+        categories: mod.categories,
+        action: mod.action,
+        notes: mod.notes,
+      },
     });
     reply = await reply.populate("author", "username isPro badges avatarKey");
     const obj = reply.toObject();
@@ -361,6 +450,9 @@ export const createReply = asyncHandler(async (req, res) => {
       } catch {
         obj.author.avatarUrl = null;
       }
+    }
+    if (obj.media) {
+      obj.media = obj.media.map(({ key, type, mimeType, size, _id, moderation }) => ({ _id, key, type, mimeType, size, moderation }));
     }
     res.status(201).json({ success: true, data: obj });
   } catch (e) {
@@ -398,7 +490,7 @@ export const listByTag = asyncHandler(async (req, res) => {
   const tag = String(req.params.tag || "").toLowerCase();
   if (!tag)
     return res.status(400).json({ success: false, message: "Tag required" });
-  const items = await Thread.find({ parent: null, tags: tag })
+  const items = await Thread.find({ parent: null, tags: tag, status: { $ne: "REJECTED" } })
     .sort({ createdAt: -1 })
     .limit(200)
     .populate("author", "username isPro badges avatarKey");

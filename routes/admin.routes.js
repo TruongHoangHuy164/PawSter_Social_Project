@@ -5,6 +5,7 @@ import { User } from "../models/user.model.js";
 import { Thread } from "../models/thread.model.js";
 import { Payment } from "../models/payment.model.js";
 import { getPaymentStats } from "../controllers/payment.controller.js";
+import asyncHandler from "express-async-handler";
 
 const router = Router();
 
@@ -310,6 +311,46 @@ router.delete("/threads/:id", async (req, res) => {
   await t.deleteOne();
   res.json({ success: true, message: "Deleted" });
 });
+
+// List flagged or pending threads for human review
+router.get("/moderation/threads", asyncHandler(async (req, res) => {
+  const { status = "FLAGGED" } = req.query;
+  const items = await Thread.find({ status })
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .populate("author", "username isPro");
+  res.json({ success: true, data: items });
+}));
+
+// Approve a thread (clears flag)
+router.post("/moderation/threads/:id/approve", asyncHandler(async (req, res) => {
+  const t = await Thread.findById(req.params.id);
+  if (!t) return res.status(404).json({ success: false, message: "Not found" });
+  t.status = "APPROVED";
+  t.moderation = {
+    ...(t.moderation || {}),
+    notes: (`${t.moderation?.notes || ""}\nApproved by ${req.user.username} (${req.user._id})`).trim(),
+    reviewer: req.user._id,
+    reviewedAt: new Date(),
+  };
+  await t.save();
+  res.json({ success: true, data: t });
+}));
+
+// Reject a thread (admin)
+router.post("/moderation/threads/:id/reject", asyncHandler(async (req, res) => {
+  const t = await Thread.findById(req.params.id);
+  if (!t) return res.status(404).json({ success: false, message: "Not found" });
+  t.status = "REJECTED";
+  t.moderation = {
+    ...(t.moderation || {}),
+    notes: (`${t.moderation?.notes || ""}\nRejected by ${req.user.username} (${req.user._id})`).trim(),
+    reviewer: req.user._id,
+    reviewedAt: new Date(),
+  };
+  await t.save();
+  res.json({ success: true, data: t });
+}));
 
 router.get("/payments", async (req, res) => {
   const items = await Payment.find()
