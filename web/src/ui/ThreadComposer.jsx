@@ -388,7 +388,7 @@ export default function ThreadComposer({ onCreated }){
       {error && <div className="text-xs text-red-400">{error}</div>}
       <div className="flex items-center justify-between text-xs text-neutral-500">
         <span>{text.length}/500</span>
-        <button disabled={loading || (!text.trim() && files.length===0)} className="btn-lux disabled:opacity-40 font-medium text-sm">{loading? 'Đang đăng...' : 'Đăng'}</button>
+        <button disabled={loading || (!text.trim() && files.length===0)} className="px-4 py-2 rounded-xl font-medium text-sm bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-40 transition-colors">{loading? 'Đang đăng...' : 'Đăng'}</button>
       </div>
     </form>
   );

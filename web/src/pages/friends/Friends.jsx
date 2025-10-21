@@ -1,18 +1,28 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { api } from "../../utils/api.js";
 import { useAuth } from "../../state/auth.jsx";
 import FriendRequests from "./FriendRequests";
 import SearchUsers from "./SearchUsers";
 import Avatar from "../../ui/Avatar";
 import ConfirmModal from "../../ui/ConfirmModal";
+import Messages from "../messages/Messages";
 
 export default function Friends() {
   const { user, token } = useAuth();
+  const location = useLocation();
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("friends");
+  const [activeTab, setActiveTab] = useState("messages");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [friendToRemove, setFriendToRemove] = useState(null);
+
+  // Check if user came from /qr route via referrer or state
+  useEffect(() => {
+    if (location.state?.fromQr || window.location.pathname === '/qr') {
+      setActiveTab("search");
+    }
+  }, [location]);
 
   useEffect(() => {
     if (!user) return;
@@ -54,6 +64,12 @@ export default function Friends() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case "messages":
+        return (
+          <div className="h-full">
+            <Messages />
+          </div>
+        );
       case "friends":
         return (
           <div>
@@ -120,14 +136,24 @@ export default function Friends() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6">
-      <h1 className="text-xl font-bold">Quản lý bạn bè</h1>
+    <div className="w-full mx-auto p-4 space-y-6">
+      <h1 className="text-xl font-bold text-center">Friends</h1>
 
       {/* Tab Navigation */}
       <div className="flex border-b border-black/10 dark:border-white/10">
         <button
-          onClick={() => setActiveTab("friends")}
+          onClick={() => setActiveTab("messages")}
           className={`px-4 py-2 font-medium ${
+            activeTab === "messages"
+              ? "text-black dark:text-white border-b-2 border-black dark:border-white"
+              : "text-neutral-400 hover:text-neutral-200"
+          }`}
+        >
+          Tin nhắn
+        </button>
+        <button
+          onClick={() => setActiveTab("friends")}
+          className={`px-4 py-2 font-medium ml-4 ${
             activeTab === "friends"
               ? "text-black dark:text-white border-b-2 border-black dark:border-white"
               : "text-neutral-400 hover:text-neutral-200"
@@ -158,7 +184,9 @@ export default function Friends() {
       </div>
 
       {/* Tab Content */}
-      <div className="mt-6">{renderTabContent()}</div>
+      <div className={`mt-6 ${activeTab === "messages" ? "h-[calc(100vh-220px)] flex flex-col" : ""}`}>
+        {renderTabContent()}
+      </div>
 
       {/* Confirm Remove Friend Modal */}
       <ConfirmModal

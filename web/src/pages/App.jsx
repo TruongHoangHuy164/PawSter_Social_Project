@@ -8,11 +8,9 @@ import {
   Register,
   Profile,
   Friends,
-  Upgrade,
-  QR,
   Search,
   Favorites,
-  Messages,
+  Notification,
   TagFeed,
   PaymentReturn,
 } from "./index.js";
@@ -81,33 +79,29 @@ export default function App() {
             />
             <Route
               path="/upgrade"
-              element={
-                <Protected>
-                  <Upgrade />
-                </Protected>
-              }
+              element={<Navigate to="/profile" replace />}
             />
             <Route
               path="/qr"
-              element={
-                <Protected>
-                  <QR />
-                </Protected>
-              }
+              element={<Navigate to="/friends" replace />}
             />
             <Route
               path="/search"
               element={
                 <Protected>
-                  <Messages />
+                  <Search />
                 </Protected>
               }
             />
             <Route
               path="/messages"
+              element={<Navigate to="/friends" replace />}
+            />
+            <Route
+              path="/notification"
               element={
                 <Protected>
-                  <Messages />
+                  <Notification />
                 </Protected>
               }
             />

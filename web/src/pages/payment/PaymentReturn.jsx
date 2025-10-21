@@ -83,10 +83,15 @@ export default function PaymentReturn(){
 
   const icon = status==='success' ? '✅' : status==='failed' ? '⚠️' : '⏳';
 
-  // Auto-redirect to Upgrade page once success
+  // Auto-redirect to home page once success
   useEffect(()=>{
     if (status === 'success') {
-      navigate('/upgrade', { replace: true });
+      // Clear pending payment from localStorage
+      localStorage.removeItem('pendingPayment');
+      // Redirect to home after short delay to show success message
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 2000);
     }
   }, [status, navigate]);
 
@@ -98,7 +103,9 @@ export default function PaymentReturn(){
       </div>
       <div className="text-sm text-neutral-600">{message}</div>
       <div className="pt-2">
-        <Link to="/upgrade" className="hover:underline text-black dark:text-white">Quay lại trang Nâng cấp</Link>
+        <Link to="/" className="hover:underline text-black dark:text-white">
+          {status === 'success' ? 'Về trang chủ' : 'Quay lại trang chủ'}
+        </Link>
         {status!=='success' && (
           <button
             onClick={()=>{

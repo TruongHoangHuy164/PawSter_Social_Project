@@ -20,10 +20,10 @@ export default function Feed(){
   useEffect(()=>{ load(); }, [load]);
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-6 paw-bg">
+    <div className="w-full mx-auto p-4 space-y-6 paw-bg">
       <div className="lux-card p-5 rounded-xl">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl font-extrabold tracking-tight" style={{color:'#352525ff'}}>Bảng tin</h2>
+          <h2 className="text-xl font-extrabold tracking-tight text-black dark:text-white">Bảng tin</h2>
           <span className="pill text-xs flex items-center gap-2 text-[color:var(--muted)]">
             <span className="paw-icon" /> Pawster Today
           </span>
@@ -33,7 +33,7 @@ export default function Feed(){
       {loading && <div className="text-center text-sm text-neutral-500">Đang tải...</div>}
       {!loading && threads.length===0 && (
         <div className="lux-card rounded-xl p-6 text-center text-sm text-neutral-500">
-          <div className="mb-2 text-base font-semibold" style={{color:'#000'}}>Chưa có bài viết</div>
+          <div className="mb-2 text-base font-semibold text-black dark:text-white">Chưa có bài viết</div>
           Hãy là người đầu tiên chia sẻ khoảnh khắc cùng thú cưng của bạn.
         </div>
       )}

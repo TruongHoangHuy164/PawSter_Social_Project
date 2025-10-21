@@ -121,16 +121,10 @@ export default function CommentInput({ threadId, onCommentCreated }) {
   }
 
   return (
-    <div className="pt-4 border-t border-gray-100">
+    <div className="pt-4 border-t border-black/10 dark:border-white/15">
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Input shell */}
-        <div
-          className="rounded-xl p-2 md:p-3 transition-all duration-200"
-          style={{
-            background: "linear-gradient(180deg, rgba(155,99,114,0.06), rgba(255,255,255,0.9))",
-            border: "1px solid rgba(43,27,34,0.08)",
-          }}
-        >
+        <div className="rounded-xl p-2 md:p-3 transition-all duration-200 bg-white dark:bg-black border border-black/10 dark:border-white/15">
           <div className="flex items-end gap-2 md:gap-3">
             <div className="flex-1">
               <textarea
@@ -138,11 +132,7 @@ export default function CommentInput({ threadId, onCommentCreated }) {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Viết bình luận sang chảnh... 🐾"
-                className="w-full resize-none rounded-lg px-3 py-2 md:px-4 md:py-3 text-sm outline-none bg-white/80"
-                style={{
-                  border: "1px solid rgba(43,27,34,0.12)",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.04) inset",
-                }}
+                className="w-full resize-none rounded-lg px-3 py-2 md:px-4 md:py-3 text-sm outline-none bg-neutral-50 dark:bg-neutral-900 border border-black/10 dark:border-white/15 text-black dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"
                 rows={2}
                 maxLength={500}
                 onKeyDown={(e) => {
@@ -160,8 +150,7 @@ export default function CommentInput({ threadId, onCommentCreated }) {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     title="Thêm ảnh/video/audio"
-                    className="h-9 w-9 rounded-full flex items-center justify-center"
-                    style={{ background: "rgba(155,99,114,0.08)", color: "#9b6372", border: "1px solid rgba(155,99,114,0.2)" }}
+                    className="h-9 w-9 rounded-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-black/10 dark:border-white/15 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -176,8 +165,7 @@ export default function CommentInput({ threadId, onCommentCreated }) {
                       type="button"
                       onClick={() => setShowStickers((s) => !s)}
                       title="Chọn sticker"
-                      className="h-9 w-9 rounded-full flex items-center justify-center"
-                      style={{ background: "rgba(155,99,114,0.08)", color: "#9b6372", border: "1px solid rgba(155,99,114,0.2)" }}
+                      className="h-9 w-9 rounded-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-black/10 dark:border-white/15 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M20 12v-2a8 8 0 1 0-16 0v2"></path>
@@ -204,8 +192,7 @@ export default function CommentInput({ threadId, onCommentCreated }) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 title="Thêm ảnh/video/audio"
-                className="h-10 w-10 rounded-full flex items-center justify-center shadow-sm hover:scale-[1.03] transition"
-                style={{ background: "rgba(155,99,114,0.08)", color: "#9b6372", border: "1px solid rgba(155,99,114,0.2)" }}
+                className="h-10 w-10 rounded-full flex items-center justify-center shadow-sm hover:scale-[1.03] transition bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-black/10 dark:border-white/15 hover:bg-neutral-200 dark:hover:bg-neutral-700"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -218,8 +205,7 @@ export default function CommentInput({ threadId, onCommentCreated }) {
                   type="button"
                   onClick={() => setShowStickers((s) => !s)}
                   title="Chọn sticker"
-                  className="h-10 w-10 rounded-full flex items-center justify-center shadow-sm hover:scale-[1.03] transition"
-                  style={{ background: "rgba(155,99,114,0.08)", color: "#9b6372", border: "1px solid rgba(155,99,114,0.2)" }}
+                  className="h-10 w-10 rounded-full flex items-center justify-center shadow-sm hover:scale-[1.03] transition bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-black/10 dark:border-white/15 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 12v-2a8 8 0 1 0-16 0v2"></path>
@@ -243,16 +229,14 @@ export default function CommentInput({ threadId, onCommentCreated }) {
         {showStickers && (
           <div
             ref={stickerPanelRef}
-            className="mt-2 rounded-2xl p-3 md:p-4 shadow-2xl"
-            style={{ background: '#fff', border: '1px solid rgba(43,27,34,0.1)' }}
+            className="mt-2 rounded-2xl p-3 md:p-4 shadow-2xl bg-white dark:bg-black border border-black/10 dark:border-white/15"
           >
             <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-medium" style={{ color: '#6b4a57' }}>Chọn sticker</div>
+              <div className="text-sm font-medium text-black dark:text-white">Chọn sticker</div>
               <button
                 type="button"
                 onClick={() => setShowStickers(false)}
-                className="h-8 w-8 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(155,99,114,0.06)', color: '#9b6372', border: '1px solid rgba(155,99,114,0.2)' }}
+                className="h-8 w-8 rounded-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-black/10 dark:border-white/15 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
                 aria-label="Đóng sticker"
               >
                 ×
@@ -264,8 +248,7 @@ export default function CommentInput({ threadId, onCommentCreated }) {
                   key={i}
                   type="button"
                   onClick={() => { insertAtCursor(s + ' ') }}
-                  className="h-10 w-10 md:h-12 md:w-12 text-xl md:text-2xl leading-none rounded-xl hover:scale-105 transition-transform"
-                  style={{ background: 'rgba(155,99,114,0.06)', border: '1px solid rgba(43,27,34,0.1)' }}
+                  className="h-10 w-10 md:h-12 md:w-12 text-xl md:text-2xl leading-none rounded-xl hover:scale-105 transition-transform bg-neutral-100 dark:bg-neutral-800 border border-black/10 dark:border-white/15 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                   title={"Sticker " + (i+1)}
                 >
                   {s}
@@ -297,16 +280,11 @@ export default function CommentInput({ threadId, onCommentCreated }) {
               return (
                 <div
                   key={i}
-                  className="relative group rounded-lg overflow-hidden flex items-center justify-center"
-                  style={{
-                    background: 'rgba(155,99,114,0.06)',
-                    border: '1px solid rgba(43,27,34,0.12)',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-                  }}
+                  className="relative group rounded-lg overflow-hidden flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 border border-black/10 dark:border-white/15 shadow-sm"
                 >
                   {type === 'image' && <img src={url} alt={file.name} className="object-cover w-full h-20" />}
                   {type === 'video' && <video src={url} className="w-full h-20 object-cover" muted />}
-                  {type === 'audio' && <span className="text-[11px] text-gray-600 truncate px-2 py-3 w-full text-center">🎵 {file.name}</span>}
+                  {type === 'audio' && <span className="text-[11px] text-neutral-600 dark:text-neutral-400 truncate px-2 py-3 w-full text-center">🎵 {file.name}</span>}
                   <button
                     type="button"
                     onClick={() => removeFile(i)}
@@ -322,17 +300,14 @@ export default function CommentInput({ threadId, onCommentCreated }) {
         )}
 
         {error && (
-          <div
-            className="text-xs px-3 py-2 rounded-md"
-            style={{ color: '#dc2626', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)' }}
-          >
+          <div className="text-xs px-3 py-2 rounded-md text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
             {error}
           </div>
         )}
 
-        <div className="flex justify-between items-center text-xs text-gray-500">
+        <div className="flex justify-between items-center text-xs text-neutral-500 dark:text-neutral-400">
           <span>{content.length}/500</span>
-          <span className="hidden md:inline" style={{ color: '#6b4a57' }}>Ctrl/⌘ + Enter để gửi</span>
+          <span className="hidden md:inline">Ctrl/⌘ + Enter để gửi</span>
         </div>
       </form>
     </div>

@@ -32,6 +32,8 @@ export default function Profile() {
   const [loaded, setLoaded] = useState(false);
   const [repostsLoaded, setRepostsLoaded] = useState(false);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
+
+
   const proExpiryStr = React.useMemo(() => {
     if (!user?.proExpiry) return "";
     try {
@@ -172,7 +174,7 @@ export default function Profile() {
   if (!user) return null;
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6 page-panel">
+    <div className="w-full mx-auto p-4 space-y-6 page-panel">
       {/* COVER SECTION */}
       <div className="relative h-56 rounded-3xl overflow-hidden border-2 border-black/10 dark:border-white/10 bg-neutral-100 dark:bg-neutral-900 shadow-lg">
         {cover ? (
@@ -324,6 +326,7 @@ export default function Profile() {
           )}
         </div>
       </div>
+      
       {/* EDIT FIELDS */}
       <div className="bg-white/30 dark:bg-black/30 border-2 border-black/10 dark:border-white/10 rounded-3xl p-6 space-y-6 card backdrop-blur-sm shadow-lg">
         <h3 className="text-lg font-bold flex items-center gap-2">

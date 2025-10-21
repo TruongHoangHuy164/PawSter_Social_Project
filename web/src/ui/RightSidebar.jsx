@@ -1,34 +1,122 @@
 import React, { useState } from 'react';
-import ChatModal from './ChatModal.jsx';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import Avatar from './Avatar.jsx';
 
-export default function RightSidebar(){
-  const [open, setOpen] = useState(false);
+const mockHashtags = [
+  { tag: '#DogLife', posts: '125K posts', trending: true },
+  { tag: 'Cat Videos', posts: '89K posts' },
+  { tag: 'Pet Adoption', posts: '45K posts' },
+  { tag: 'Pet Fashion', posts: '67K posts' }
+];
+
+const mockSuggestedUsers = [
+  {
+    id: 1,
+    username: 'Max',
+    handle: '@cute_adventures',
+    avatarUrl: '/api/placeholder/40/40',
+    isFollowing: false
+  },
+  {
+    id: 2,
+    username: 'Bella',
+    handle: '@bella_beauty',
+    avatarUrl: '/api/placeholder/40/40',
+    isFollowing: false
+  },
+  {
+    id: 3,
+    username: 'Charlie',
+    handle: '@charlie_pup',
+    avatarUrl: '/api/placeholder/40/40',
+    isFollowing: false
+  }
+];
+
+export default function RightSidebar() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [followingUsers, setFollowingUsers] = useState(new Set());
+
+  const handleFollow = (userId) => {
+    setFollowingUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
 
   return (
-    <aside className="hidden md:block col-span-3">
-      <div className="sticky top-20 space-y-3">
-        <div className="px-3 py-3 rounded-2xl flex items-center justify-between border border-black/10 dark:border-white/10 bg-white dark:bg-black">
-          <div className="text-sm font-medium text-black dark:text-white">Bong bóng chat</div>
-          <button
-            onClick={()=>setOpen(true)}
-            className="px-3 py-1 rounded-full text-sm text-white bg-black dark:bg-white dark:text-black hover:shadow"
-            aria-haspopup="dialog"
-            aria-expanded={open}
-          >
-            Mở
-          </button>
+    <aside className="hidden lg:block w-80 space-y-4">
+      <div className="sticky top-4 space-y-4">
+        {/* Search Bar */}
+        <div className="bg-white dark:bg-black border border-black/10 dark:border-white/15 rounded-2xl p-4">
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Search Pawster..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-neutral-50 dark:bg-neutral-900 border border-black/10 dark:border-white/15 rounded-xl text-sm placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"
+            />
+          </div>
         </div>
 
-        <div className="p-3 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-black">
-          <div className="text-sm text-neutral-600 dark:text-neutral-300">Gợi ý</div>
-          <ul className="mt-2 text-sm space-y-1">
-            <li>• Nhấn mở để bắt đầu trò chuyện</li>
-            <li>• Hỗ trợ đóng bằng Esc hoặc bấm ra ngoài</li>
-          </ul>
+        {/* Pawster Today - Trending Hashtags */}
+        <div className="bg-white dark:bg-black border border-black/10 dark:border-white/15 rounded-2xl p-4">
+          <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">Pawster Today</h3>
+          <div className="space-y-3">
+            {mockHashtags.map((item, index) => (
+              <div key={index} className="flex items-center justify-between p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-black dark:text-white">
+                      {item.trending && <span className="text-xs text-orange-500 mr-1">Trending</span>}
+                      {item.tag}
+                    </span>
+                  </div>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">{item.posts}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Suggested for You */}
+        <div className="bg-white dark:bg-black border border-black/10 dark:border-white/15 rounded-2xl p-4">
+          <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">Suggested for You</h3>
+          <div className="space-y-3">
+            {mockSuggestedUsers.map((user) => (
+              <div key={user.id} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar 
+                    user={{ username: user.username, avatarUrl: user.avatarUrl }} 
+                    size="sm" 
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-black dark:text-white">{user.username}</div>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400">{user.handle}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleFollow(user.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                    followingUsers.has(user.id)
+                      ? 'bg-neutral-200 dark:bg-neutral-800 text-black dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700'
+                      : 'bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200'
+                  }`}
+                >
+                  {followingUsers.has(user.id) ? 'Following' : 'Follow'}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-
-      <ChatModal open={open} onClose={()=>setOpen(false)} />
     </aside>
   );
 }

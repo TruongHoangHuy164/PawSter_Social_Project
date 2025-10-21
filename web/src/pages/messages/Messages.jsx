@@ -194,8 +194,9 @@ export default function Messages(){
   }, [token, active]);
 
   return (
-    <div className="grid grid-cols-12 gap-4 h-[calc(100vh-80px)] min-h-0 overflow-hidden">
-  <aside className="col-span-5 md:col-span-4 lg:col-span-3 p-2 rounded-2xl bg-white dark:bg-black border border-black/10 dark:border-white/10 flex flex-col h-full min-h-0">
+    <div className="grid grid-cols-12 gap-4 h-full min-h-0 overflow-hidden">
+  <aside 
+        className="col-span-5 md:col-span-4 lg:col-span-3 p-2 rounded-2xl bg-white border border-black/10 dark:border-white/10 flex flex-col h-full min-h-0 dark:bg-[#242323]">
         <div className="font-semibold mb-2">Hội thoại</div>
         <div className="space-y-1 overflow-y-auto flex-1 min-h-0 pr-1">
           {conversations.map(c=>{
@@ -220,7 +221,7 @@ export default function Messages(){
           })}
         </div>
       </aside>
-  <section className="col-span-7 md:col-span-8 lg:col-span-9 flex flex-col h-full min-h-0 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-black overflow-hidden">
+  <section className="col-span-7 md:col-span-8 lg:col-span-9 flex flex-col h-full min-h-0 rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#242323] overflow-hidden">
         {!active ? (
           <div className="m-auto text-sm text-muted">Chọn một hội thoại để bắt đầu</div>
         ) : (

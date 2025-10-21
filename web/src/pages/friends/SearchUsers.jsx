@@ -9,6 +9,13 @@ export default function SearchUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState(null);
+  
+  // QR states
+  const [qr, setQr] = useState(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrMessage, setQrMessage] = useState('');
+  const [tokenInput, setTokenInput] = useState('');
+  const [activeTab, setActiveTab] = useState('search');
 
   const searchUsers = useCallback(
     async (searchQuery) => {
@@ -139,20 +146,76 @@ export default function SearchUsers() {
     }
   };
 
+  // QR functions
+  const createQR = async () => {
+    setQrLoading(true); 
+    setQrMessage('');
+    try {
+      const res = await api.post('/qr/create', {}, token);
+      setQr(res.data.data);
+    } catch(e){ 
+      setQrMessage(e.message);
+    } finally { 
+      setQrLoading(false);
+    } 
+  };
+
+  const sendRequest = async () => {
+    if (!tokenInput.trim()) return;
+    setQrLoading(true); 
+    setQrMessage('');
+    try {
+      const res = await api.post('/qr/scan', { token: tokenInput.trim() }, token);
+      setQrMessage(res.data.message || 'Đã gửi yêu cầu');
+      setTokenInput(''); // Clear input after successful request
+    } catch(e){ 
+      setQrMessage(e.message);
+    } finally { 
+      setQrLoading(false);
+    } 
+  };
+
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Tìm kiếm bạn bè</h1>
-
-      {/* Search Input */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Tìm kiếm theo tên hoặc email..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full p-3 bg-transparent border border-black/10 dark:border-white/10 rounded-2xl text-inherit placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"
-        />
+      <h1 className="text-2xl font-bold mb-6">Tìm kiếm & Kết bạn</h1>
+      
+      {/* Tab Navigation */}
+      <div className="flex mb-6 border-b border-black/10 dark:border-white/10">
+        <button
+          onClick={() => setActiveTab('search')}
+          className={`px-4 py-2 font-medium ${
+            activeTab === 'search'
+              ? "text-black dark:text-white border-b-2 border-black dark:border-white"
+              : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+          }`}
+        >
+          Tìm kiếm
+        </button>
+        <button
+          onClick={() => setActiveTab('qr')}
+          className={`px-4 py-2 font-medium ml-4 ${
+            activeTab === 'qr'
+              ? "text-black dark:text-white border-b-2 border-black dark:border-white"
+              : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+          }`}
+        >
+          Kết bạn QR
+        </button>
       </div>
+
+      {/* Tab Content */}
+      {activeTab === 'search' && (
+        <>
+          {/* Search Input */}
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo tên hoặc email..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full p-3 bg-transparent border border-black/10 dark:border-white/10 rounded-2xl text-inherit placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"
+            />
+          </div>
 
       {/* Loading State */}
       {loading && (
@@ -214,15 +277,58 @@ export default function SearchUsers() {
         </div>
       )}
 
-      {/* Search Tips */}
-      {!query && (
-        <div className="mt-8 p-4 bg-neutral-800 rounded-lg">
-          <h3 className="font-medium mb-2">Mẹo tìm kiếm:</h3>
-          <ul className="text-sm text-neutral-400 space-y-1">
-            <li>• Nhập ít nhất 2 ký tự để bắt đầu tìm kiếm</li>
-            <li>• Có thể tìm theo tên người dùng hoặc email</li>
-            <li>• Kết quả sẽ hiển thị tối đa 20 người dùng</li>
-          </ul>
+          {/* Search Tips */}
+          {!query && (
+            <div className="mt-8 p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+              <h3 className="font-medium mb-2">Mẹo tìm kiếm:</h3>
+              <ul className="text-sm text-neutral-400 space-y-1">
+                <li>• Nhập ít nhất 2 ký tự để bắt đầu tìm kiếm</li>
+                <li>• Có thể tìm theo tên người dùng hoặc email</li>
+                <li>• Kết quả sẽ hiển thị tối đa 20 người dùng</li>
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* QR Tab Content */}
+      {activeTab === 'qr' && (
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-4 card p-5 rounded-2xl">
+            <h2 className="font-medium">Tạo mã QR của bạn</h2>
+            <button 
+              onClick={createQR} 
+              disabled={qrLoading} 
+              className="px-4 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 text-sm font-medium"
+            >
+              {qrLoading ? 'Đang tạo...' : 'Tạo QR'}
+            </button>
+            {qr && (
+              <div className="space-y-2 text-center">
+                <img src={qr.qr} alt="qr" className="mx-auto w-48 h-48 rounded bg-white p-2" />
+                <div className="text-[10px] break-all text-neutral-400">Token: {qr.token}</div>
+                <div className="text-xs text-neutral-400">Hết hạn: {new Date(qr.expiresAt).toLocaleTimeString()}</div>
+              </div>
+            )}
+          </div>
+          <div className="space-y-4 card p-5 rounded-2xl">
+            <h2 className="font-medium">Nhập token bạn bè</h2>
+            <textarea 
+              rows={4} 
+              value={tokenInput} 
+              onChange={e => setTokenInput(e.target.value)} 
+              placeholder="Dán token QR..." 
+              className="w-full bg-transparent border border-black/10 dark:border-white/10 focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20 rounded-2xl p-2" 
+            />
+            <button 
+              onClick={sendRequest} 
+              disabled={qrLoading || !tokenInput.trim()} 
+              className="px-4 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 text-sm font-medium"
+            >
+              Gửi yêu cầu
+            </button>
+            {qrMessage && <div className="text-xs text-neutral-500">{qrMessage}</div>}
+          </div>
         </div>
       )}
     </div>
