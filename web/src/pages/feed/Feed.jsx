@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../../utils/api.js';
 import { useAuth } from '../../state/auth.jsx';
 import ThreadComposer from '../../ui/ThreadComposer.jsx';
@@ -6,8 +7,11 @@ import ThreadItem from '../../ui/ThreadItem.jsx';
 
 export default function Feed(){
   const { token } = useAuth();
+  const location = useLocation();
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const highlightThreadId = params.get('threadId');
 
   const load = useCallback(async ()=>{
     setLoading(true);
@@ -38,7 +42,15 @@ export default function Feed(){
         </div>
       )}
       <div className="space-y-4">
-        {threads.map(t=> <div key={t._id} className="fade-in"><ThreadItem thread={t} onDelete={(id)=>setThreads(ts=>ts.filter(x=>x._id!==id))} /></div>)}
+        {threads.map(t=> (
+          <div key={t._id} className="fade-in">
+            <ThreadItem 
+              thread={t} 
+              onDelete={(id)=>setThreads(ts=>ts.filter(x=>x._id!==id))}
+              openComments={highlightThreadId === t._id}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

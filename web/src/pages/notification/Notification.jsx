@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../state/auth.jsx';
 import { useSocket } from '../../state/socket.jsx';
 import { useNotifications } from '../../state/notifications.jsx';
@@ -20,6 +21,7 @@ export default function Notification() {
   const { token } = useAuth();
   const { socket } = useSocket();
   const { unreadCount, setUnreadCount, markAllRead } = useNotifications();
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [cursor, setCursor] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -63,6 +65,27 @@ export default function Notification() {
     } catch (e) { console.error(e); }
   };
 
+  const handleOpenNotification = async (n) => {
+    // Optimistically mark as read and decrement unread counter
+    if (!n.read) {
+      setItems((prev) => prev.map((it) => (it._id === n._id ? { ...it, read: true } : it)));
+      setUnreadCount((u) => Math.max(0, (typeof u === 'number' ? u : 0) - 1));
+      // Fire and forget API call
+      try { await notificationApi.markRead(n._id, token); } catch (e) { /* ignore */ }
+    }
+
+    // Navigate based on type
+    if (n.type === 'comment' || n.type === 'like_thread' || n.type === 'repost_thread' || n.type === 'like_comment') {
+      if (n.thread?._id) navigate(`/?threadId=${n.thread._id}`);
+      else navigate('/');
+    } else if (n.type === 'follow' || n.type === 'friend_accepted') {
+      if (n.actor?._id) navigate(`/profile/${n.actor._id}`);
+      else navigate('/profile');
+    } else {
+      navigate('/');
+    }
+  };
+
   return (
     <div className="w-full max-w-2xl mx-auto p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -78,7 +101,11 @@ export default function Notification() {
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">Chưa có thông báo</div>
         )}
         {items.map((n) => (
-          <div key={n._id} className={`p-4 flex items-start gap-3 ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
+          <div 
+            key={n._id} 
+            onClick={() => handleOpenNotification(n)}
+            className={`cursor-pointer p-4 flex items-start gap-3 ${!n.read ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
+          >
             <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-lg">🔔</div>
             <div className="flex-1">
               <div className="text-sm">

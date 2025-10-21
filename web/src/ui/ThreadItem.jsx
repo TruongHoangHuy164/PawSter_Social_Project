@@ -9,7 +9,7 @@ import CommentInput from "./CommentInput.jsx";
 import { api, threadApi, userApi } from "../utils/api.js";
 import { useAuth } from "../state/auth.jsx";
 
-export default function ThreadItem({ thread, onDelete }) {
+export default function ThreadItem({ thread, onDelete, openComments = false }) {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const mine = user && thread.author && thread.author._id === user._id;
@@ -448,8 +448,23 @@ export default function ThreadItem({ thread, onDelete }) {
     [isFollowing, thread.author, token, mine]
   );
 
+  // Auto open comments when requested (e.g., from notification deep link)
+  useEffect(() => {
+    if (openComments) {
+      setShowComments(true);
+      // Scroll the card into view once mounted
+      try {
+        const el = document.getElementById(`thread-${thread._id}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => {
+          commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+      } catch {}
+    }
+  }, [openComments, thread._id]);
+
   return (
-    <div className="p-5 rounded-2xl space-y-3 border border-black/10 dark:border-white/10 bg-white dark:bg-black pop hover:shadow-md transition-shadow duration-200">
+    <div id={`thread-${thread._id}`} data-thread-id={thread._id} className="p-5 rounded-2xl space-y-3 border border-black/10 dark:border-white/10 bg-white dark:bg-black pop hover:shadow-md transition-shadow duration-200">
       {/* Header */}
       <div className="flex items-center gap-3 text-sm">
         <div className="flex items-center gap-2">
