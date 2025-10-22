@@ -17,7 +17,11 @@ const mediaSubSchema = new mongoose.Schema(
     // Optional per-media moderation details for fine-grained UI handling
     moderation: {
       score: { type: Number, default: 0 }, // 0..1
-      decision: { type: String, enum: ["APPROVE", "FLAG", "REJECT"], default: "APPROVE" },
+      decision: {
+        type: String,
+        enum: ["APPROVE", "FLAG", "REJECT"],
+        default: "APPROVE",
+      },
       // Could contain detailed categories like nudity_explicit, violence_graphic, etc.
       categories: { type: [String], default: [] },
     },
@@ -35,9 +39,14 @@ const threadSchema = new mongoose.Schema(
     content: { type: String, maxlength: 500 },
     media: { type: [mediaSubSchema], default: [] },
     // Parent thread for replies; null for root posts
-    parent: { type: mongoose.Schema.Types.ObjectId, ref: "Thread", default: null },
+    parent: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Thread",
+      default: null,
+    },
     // Extracted hashtags for filtering and discovery
     tags: { type: [String], default: [] },
+    hashtags: { type: [String], default: [], index: true },
     // Moderation status for visibility / review pipeline
     status: {
       type: String,
@@ -71,5 +80,6 @@ threadSchema.pre("validate", function (next) {
 threadSchema.index({ createdAt: -1 });
 threadSchema.index({ parent: 1, createdAt: 1 });
 threadSchema.index({ tags: 1, createdAt: -1 });
+threadSchema.index({ hashtags: 1, createdAt: -1 });
 
 export const Thread = mongoose.model("Thread", threadSchema);

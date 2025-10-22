@@ -1,44 +1,38 @@
-import React, { useState } from 'react';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import Avatar from './Avatar.jsx';
-
-const mockHashtags = [
-  { tag: '#DogLife', posts: '125K posts', trending: true },
-  { tag: 'Cat Videos', posts: '89K posts' },
-  { tag: 'Pet Adoption', posts: '45K posts' },
-  { tag: 'Pet Fashion', posts: '67K posts' }
-];
+import React, { useState } from "react";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import Avatar from "./Avatar.jsx";
+import TrendingHashtags from "./TrendingHashtags.jsx";
 
 const mockSuggestedUsers = [
   {
     id: 1,
-    username: 'Max',
-    handle: '@cute_adventures',
-    avatarUrl: '/api/placeholder/40/40',
-    isFollowing: false
+    username: "Max",
+    handle: "@cute_adventures",
+    avatarUrl: "/api/placeholder/40/40",
+    isFollowing: false,
   },
   {
     id: 2,
-    username: 'Bella',
-    handle: '@bella_beauty',
-    avatarUrl: '/api/placeholder/40/40',
-    isFollowing: false
+    username: "Bella",
+    handle: "@bella_beauty",
+    avatarUrl: "/api/placeholder/40/40",
+    isFollowing: false,
   },
   {
     id: 3,
-    username: 'Charlie',
-    handle: '@charlie_pup',
-    avatarUrl: '/api/placeholder/40/40',
-    isFollowing: false
-  }
+    username: "Charlie",
+    handle: "@charlie_pup",
+    avatarUrl: "/api/placeholder/40/40",
+    isFollowing: false,
+  },
 ];
 
 export default function RightSidebar() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [followingUsers, setFollowingUsers] = useState(new Set());
 
   const handleFollow = (userId) => {
-    setFollowingUsers(prev => {
+    setFollowingUsers((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(userId)) {
         newSet.delete(userId);
@@ -67,50 +61,42 @@ export default function RightSidebar() {
         </div>
 
         {/* Pawster Today - Trending Hashtags */}
-        <div className="bg-white dark:bg-black border border-black/10 dark:border-white/15 rounded-2xl p-4">
-          <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">Pawster Today</h3>
-          <div className="space-y-3">
-            {mockHashtags.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-black dark:text-white">
-                      {item.trending && <span className="text-xs text-orange-500 mr-1">Trending</span>}
-                      {item.tag}
-                    </span>
-                  </div>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">{item.posts}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <TrendingHashtags />
 
         {/* Suggested for You */}
         <div className="bg-white dark:bg-black border border-black/10 dark:border-white/15 rounded-2xl p-4">
-          <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">Suggested for You</h3>
+          <h3 className="text-lg font-semibold mb-4 text-black dark:text-white">
+            Suggested for You
+          </h3>
           <div className="space-y-3">
             {mockSuggestedUsers.map((user) => (
               <div key={user.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Avatar 
-                    user={{ username: user.username, avatarUrl: user.avatarUrl }} 
-                    size="sm" 
+                  <Avatar
+                    user={{
+                      username: user.username,
+                      avatarUrl: user.avatarUrl,
+                    }}
+                    size="sm"
                   />
                   <div>
-                    <div className="text-sm font-medium text-black dark:text-white">{user.username}</div>
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">{user.handle}</div>
+                    <div className="text-sm font-medium text-black dark:text-white">
+                      {user.username}
+                    </div>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {user.handle}
+                    </div>
                   </div>
                 </div>
                 <button
                   onClick={() => handleFollow(user.id)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
                     followingUsers.has(user.id)
-                      ? 'bg-neutral-200 dark:bg-neutral-800 text-black dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700'
-                      : 'bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200'
+                      ? "bg-neutral-200 dark:bg-neutral-800 text-black dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
+                      : "bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200"
                   }`}
                 >
-                  {followingUsers.has(user.id) ? 'Following' : 'Follow'}
+                  {followingUsers.has(user.id) ? "Following" : "Follow"}
                 </button>
               </div>
             ))}

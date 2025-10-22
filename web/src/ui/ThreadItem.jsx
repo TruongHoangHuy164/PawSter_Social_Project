@@ -8,6 +8,7 @@ import CommentSection from "./CommentSection.jsx";
 import CommentInput from "./CommentInput.jsx";
 import { api, threadApi, userApi } from "../utils/api.js";
 import { useAuth } from "../state/auth.jsx";
+import { renderContentWithHashtags } from "../utils/hashtag.jsx";
 
 export default function ThreadItem({ thread, onDelete }) {
   const { user, token } = useAuth();
@@ -37,13 +38,10 @@ export default function ThreadItem({ thread, onDelete }) {
   const [sensitiveRevealed, setSensitiveRevealed] = useState(false);
   const blurred = isFlagged && !sensitiveRevealed;
   // helper: check if an image tile should be blurred (per-media moderation)
-  const isMediaSensitive = useCallback(
-    (media) => {
-      const dec = media?.moderation?.decision;
-      return dec === "FLAG" || dec === "REJECT";
-    },
-    []
-  );
+  const isMediaSensitive = useCallback((media) => {
+    const dec = media?.moderation?.decision;
+    return dec === "FLAG" || dec === "REJECT";
+  }, []);
 
   // Initialize likes and reposts from thread data
   useEffect(() => {
@@ -499,15 +497,26 @@ export default function ThreadItem({ thread, onDelete }) {
       {isFlagged && !sensitiveRevealed && (
         <div className="p-3 rounded-xl border border-yellow-500/30 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-900 dark:text-yellow-200 text-sm flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
               <line x1="12" y1="9" x2="12" y2="13"></line>
               <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
             <span className="font-medium">Nội dung có thể nhạy cảm</span>
           </div>
-          {!!(thread?.moderation?.categories?.length) && (
-            <div className="text-xs opacity-80">Phát hiện: {thread.moderation.categories.join(", ")}</div>
+          {!!thread?.moderation?.categories?.length && (
+            <div className="text-xs opacity-80">
+              Phát hiện: {thread.moderation.categories.join(", ")}
+            </div>
           )}
           <div className="flex items-center gap-2">
             <button
@@ -532,13 +541,21 @@ export default function ThreadItem({ thread, onDelete }) {
       )}
 
       {/* Content */}
-      <div className={`text-sm leading-relaxed whitespace-pre-wrap text-neutral-800 dark:text-neutral-200 ${blurred ? "pointer-events-none select-none blur" : ""}`}>
-        {thread.content}
+      <div
+        className={`text-sm leading-relaxed whitespace-pre-wrap text-neutral-800 dark:text-neutral-200 ${
+          blurred ? "pointer-events-none select-none blur" : ""
+        }`}
+      >
+        {renderContentWithHashtags(thread.content)}
       </div>
 
       {/* Media Gallery */}
       {thread.media && thread.media.length > 0 && (
-        <div className={`space-y-3 pt-2 ${blurred ? "pointer-events-none select-none blur" : ""}`}>
+        <div
+          className={`space-y-3 pt-2 ${
+            blurred ? "pointer-events-none select-none blur" : ""
+          }`}
+        >
           <div className="relative">
             {mediaCount > visibleCountForWidth && (
               <>
@@ -657,7 +674,9 @@ export default function ThreadItem({ thread, onDelete }) {
                             alt={m.mimeType}
                             draggable={false}
                             className={`object-cover w-full h-full group-hover:opacity-95 transition-opacity duration-200 ${
-                              (!sensitiveRevealed && isMediaSensitive(m)) ? "blur" : ""
+                              !sensitiveRevealed && isMediaSensitive(m)
+                                ? "blur"
+                                : ""
                             }`}
                           />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200 flex items-center justify-center">
@@ -680,11 +699,16 @@ export default function ThreadItem({ thread, onDelete }) {
                             </div>
                           </div>
                           {/* Per-image moderation badge */}
-                          {m?.moderation && (m?.moderation?.decision === "FLAG" || m?.moderation?.decision === "REJECT") && !sensitiveRevealed && (
-                            <div className="absolute bottom-2 left-2 right-2 text-[10px] leading-tight p-1.5 rounded-md bg-black/65 text-white shadow">
-                              Ảnh nhạy cảm: {(m.moderation.categories || []).join(", ") || m.moderation.decision}
-                            </div>
-                          )}
+                          {m?.moderation &&
+                            (m?.moderation?.decision === "FLAG" ||
+                              m?.moderation?.decision === "REJECT") &&
+                            !sensitiveRevealed && (
+                              <div className="absolute bottom-2 left-2 right-2 text-[10px] leading-tight p-1.5 rounded-md bg-black/65 text-white shadow">
+                                Ảnh nhạy cảm:{" "}
+                                {(m.moderation.categories || []).join(", ") ||
+                                  m.moderation.decision}
+                              </div>
+                            )}
                         </button>
                       )}
                     </div>
