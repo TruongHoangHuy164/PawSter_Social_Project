@@ -15,6 +15,8 @@ import {
   unrepostThread,
   getFavorites,
   getReposts,
+  getThreadsByHashtag,
+  getTrendingHashtags,
 } from "../controllers/thread.controller.js";
 import { uploadThreadMedia } from "../middleware/uploadMiddleware.js";
 
@@ -22,6 +24,8 @@ const router = Router();
 router.post("/", authMiddleware, uploadThreadMedia, createThread);
 router.get("/", authMiddleware, listThreads);
 router.get("/tag/:tag", authMiddleware, listByTag);
+router.get("/hashtag/:tag", authMiddleware, getThreadsByHashtag);
+router.get("/hashtags/trending", authMiddleware, getTrendingHashtags);
 router.get("/:id", authMiddleware, getThread);
 router.get("/:id/replies", authMiddleware, listReplies);
 router.post("/:id/replies", authMiddleware, uploadThreadMedia, createReply);

@@ -83,10 +83,7 @@ export default function App() {
               path="/upgrade"
               element={<Navigate to="/profile" replace />}
             />
-            <Route
-              path="/qr"
-              element={<Navigate to="/friends" replace />}
-            />
+            <Route path="/qr" element={<Navigate to="/friends" replace />} />
             <Route
               path="/search"
               element={
@@ -117,6 +114,14 @@ export default function App() {
             />
             <Route
               path="/tag/:tag"
+              element={
+                <Protected>
+                  <TagFeed />
+                </Protected>
+              }
+            />
+            <Route
+              path="/hashtag/:tag"
               element={
                 <Protected>
                   <TagFeed />

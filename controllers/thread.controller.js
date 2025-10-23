@@ -126,6 +126,7 @@ export const createThread = asyncHandler(async (req, res) => {
 
   try {
     const tags = extractTags(content);
+    const hashtags = extractTags(content); // Same as tags for now
 
     // --- Auto moderation: analyze content and media hints ---
     const imageKeys = (uploaded || [])
@@ -142,7 +143,11 @@ export const createThread = asyncHandler(async (req, res) => {
         }
       })
     );
-  const mod = await moderation.moderateContent({ text: content, imageKeys, imageUrls: imageUrls.filter(Boolean) });
+    const mod = await moderation.moderateContent({
+      text: content,
+      imageKeys,
+      imageUrls: imageUrls.filter(Boolean),
+    });
     let status = "APPROVED";
     if (mod.action === "REJECT") {
       const hardPolicy = (process.env.MOD_HARD_POLICY || "flag").toLowerCase();
@@ -163,13 +168,22 @@ export const createThread = asyncHandler(async (req, res) => {
       status = "FLAGGED"; // allow but hidden/limited in UI until reviewed
     }
     // Map per-image moderation results to media array by order of uploaded images
-    const perImage = (mod?.images?.images || []).filter((r) => r.source === "ai" || r.source === "rekognition");
+    const perImage = (mod?.images?.images || []).filter(
+      (r) => r.source === "ai" || r.source === "rekognition"
+    );
     let imageCursor = 0;
     const uploadedWithModeration = uploaded.map((m) => {
       if (m.type !== "image") return m;
       const imgRes = perImage[imageCursor++] || null;
       if (!imgRes) return m;
-      return { ...m, moderation: { score: Number(imgRes.score) || 0, decision: imgRes.decision || "APPROVE", categories: Array.isArray(imgRes.categories) ? imgRes.categories : [] } };
+      return {
+        ...m,
+        moderation: {
+          score: Number(imgRes.score) || 0,
+          decision: imgRes.decision || "APPROVE",
+          categories: Array.isArray(imgRes.categories) ? imgRes.categories : [],
+        },
+      };
     });
 
     let thread = await Thread.create({
@@ -178,6 +192,7 @@ export const createThread = asyncHandler(async (req, res) => {
       media: uploadedWithModeration,
       parent: null,
       tags,
+      hashtags,
       status,
       moderation: {
         autoFlagScore: mod.score,
@@ -200,7 +215,16 @@ export const createThread = asyncHandler(async (req, res) => {
       }
     }
     if (sanitized.media) {
-      sanitized.media = sanitized.media.map(({ key, type, mimeType, size, _id, moderation }) => ({ _id, key, type, mimeType, size, moderation }));
+      sanitized.media = sanitized.media.map(
+        ({ key, type, mimeType, size, _id, moderation }) => ({
+          _id,
+          key,
+          type,
+          mimeType,
+          size,
+          moderation,
+        })
+      );
     }
     res.status(201).json({ success: true, data: sanitized });
   } catch (e) {
@@ -403,26 +427,44 @@ export const createReply = asyncHandler(async (req, res) => {
         }
       })
     );
-  const mod = await moderation.moderateContent({ text: content, imageKeys, imageUrls: imageUrls.filter(Boolean) });
+    const mod = await moderation.moderateContent({
+      text: content,
+      imageKeys,
+      imageUrls: imageUrls.filter(Boolean),
+    });
     let status = "APPROVED";
     if (mod.action === "REJECT") {
       const hardPolicy = (process.env.MOD_HARD_POLICY || "flag").toLowerCase();
       if (hardPolicy === "block") {
-        if (uploaded.length) deleteMediaKeys(uploaded.map((u) => u.key)).catch(() => {});
-        return res.status(400).json({ success: false, message: "Nội dung vi phạm. Bình luận bị chặn.", moderation: mod });
+        if (uploaded.length)
+          deleteMediaKeys(uploaded.map((u) => u.key)).catch(() => {});
+        return res.status(400).json({
+          success: false,
+          message: "Nội dung vi phạm. Bình luận bị chặn.",
+          moderation: mod,
+        });
       }
       status = "FLAGGED";
     } else if (mod.action === "FLAG") {
       status = "FLAGGED";
     }
 
-    const perImage = (mod?.images?.images || []).filter((r) => r.source === "ai" || r.source === "rekognition");
+    const perImage = (mod?.images?.images || []).filter(
+      (r) => r.source === "ai" || r.source === "rekognition"
+    );
     let imageCursor = 0;
     const uploadedWithModeration = uploaded.map((m) => {
       if (m.type !== "image") return m;
       const imgRes = perImage[imageCursor++] || null;
       if (!imgRes) return m;
-      return { ...m, moderation: { score: Number(imgRes.score) || 0, decision: imgRes.decision || "APPROVE", categories: Array.isArray(imgRes.categories) ? imgRes.categories : [] } };
+      return {
+        ...m,
+        moderation: {
+          score: Number(imgRes.score) || 0,
+          decision: imgRes.decision || "APPROVE",
+          categories: Array.isArray(imgRes.categories) ? imgRes.categories : [],
+        },
+      };
     });
 
     let reply = await Thread.create({
@@ -452,7 +494,16 @@ export const createReply = asyncHandler(async (req, res) => {
       }
     }
     if (obj.media) {
-      obj.media = obj.media.map(({ key, type, mimeType, size, _id, moderation }) => ({ _id, key, type, mimeType, size, moderation }));
+      obj.media = obj.media.map(
+        ({ key, type, mimeType, size, _id, moderation }) => ({
+          _id,
+          key,
+          type,
+          mimeType,
+          size,
+          moderation,
+        })
+      );
     }
     res.status(201).json({ success: true, data: obj });
   } catch (e) {
@@ -490,7 +541,11 @@ export const listByTag = asyncHandler(async (req, res) => {
   const tag = String(req.params.tag || "").toLowerCase();
   if (!tag)
     return res.status(400).json({ success: false, message: "Tag required" });
-  const items = await Thread.find({ parent: null, tags: tag, status: { $ne: "REJECTED" } })
+  const items = await Thread.find({
+    parent: null,
+    tags: tag,
+    status: { $ne: "REJECTED" },
+  })
     .sort({ createdAt: -1 })
     .limit(200)
     .populate("author", "username isPro badges avatarKey");
@@ -706,4 +761,129 @@ export const getReposts = asyncHandler(async (req, res) => {
   );
 
   res.json({ success: true, data: withAvatars });
+});
+
+/**
+ * Get threads by hashtag
+ * GET /hashtag/:tag
+ */
+export const getThreadsByHashtag = asyncHandler(async (req, res) => {
+  const { tag } = req.params;
+  const limit = parseInt(req.query.limit) || 50;
+  const skip = parseInt(req.query.skip) || 0;
+
+  if (!tag || typeof tag !== "string") {
+    return res.status(400).json({ success: false, message: "Invalid hashtag" });
+  }
+
+  // Normalize hashtag (lowercase, remove #)
+  const normalizedTag = tag.toLowerCase().replace(/^#/, "");
+
+  // Find threads with this hashtag
+  const threads = await Thread.find({
+    hashtags: normalizedTag,
+    status: "APPROVED", // Only show approved threads
+  })
+    .populate("author", "username isPro badges avatarKey")
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .skip(skip)
+    .lean();
+
+  // Get total count for pagination
+  const totalCount = await Thread.countDocuments({
+    hashtags: normalizedTag,
+    status: "APPROVED",
+  });
+
+  // Sign avatar URLs
+  const threadsWithAvatars = await Promise.all(
+    threads.map(async (t) => {
+      if (t.author?.avatarKey) {
+        try {
+          t.author.avatarUrl = await getSignedMediaUrl(t.author.avatarKey, 900);
+        } catch {
+          t.author.avatarUrl = null;
+        }
+      }
+      return t;
+    })
+  );
+
+  res.json({
+    success: true,
+    data: {
+      hashtag: normalizedTag,
+      threads: threadsWithAvatars,
+      total: totalCount,
+      hasMore: skip + threads.length < totalCount,
+    },
+  });
+});
+
+/**
+ * Get trending hashtags
+ * GET /hashtags/trending
+ */
+export const getTrendingHashtags = asyncHandler(async (req, res) => {
+  const limit = parseInt(req.query.limit) || 10;
+  const period = req.query.period || "24h"; // 24h, 7d, 30d
+
+  // Calculate date threshold based on period
+  let dateThreshold = new Date();
+  switch (period) {
+    case "7d":
+      dateThreshold.setDate(dateThreshold.getDate() - 7);
+      break;
+    case "30d":
+      dateThreshold.setDate(dateThreshold.getDate() - 30);
+      break;
+    case "24h":
+    default:
+      dateThreshold.setHours(dateThreshold.getHours() - 24);
+  }
+
+  // Aggregate hashtags from recent threads
+  const trending = await Thread.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: dateThreshold },
+        status: "APPROVED",
+        hashtags: { $exists: true, $ne: [] },
+      },
+    },
+    {
+      $unwind: "$hashtags",
+    },
+    {
+      $group: {
+        _id: "$hashtags",
+        count: { $sum: 1 },
+        latestUse: { $max: "$createdAt" },
+      },
+    },
+    {
+      $sort: { count: -1, latestUse: -1 },
+    },
+    {
+      $limit: limit,
+    },
+    {
+      $project: {
+        _id: 0,
+        tag: "$_id",
+        count: 1,
+        latestUse: 1,
+      },
+    },
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      trending,
+      period,
+      total: trending.length,
+    },
+  });
 });

@@ -1,6 +1,8 @@
 import asyncHandler from "express-async-handler";
+import mongoose from "mongoose";
 import { User } from "../models/user.model.js";
 import { FriendRequest } from "../models/friendRequest.model.js";
+import { Thread } from "../models/thread.model.js";
 import {
   uploadBuffer,
   getSignedMediaUrl,
@@ -626,4 +628,134 @@ export const unfollowUser = asyncHandler(async (req, res) => {
   );
 
   res.json({ success: true, message: "Unfollowed successfully" });
+});
+
+// Follow suggestions based on high follower counts and high total likes
+export const getFollowSuggestions = asyncHandler(async (req, res) => {
+  const me = await User.findById(req.user._id).select("following friends");
+  if (!me) return res.status(404).json({ success: false, message: "User not found" });
+
+  const excludeSet = new Set([
+    String(req.user._id),
+    ...(me.following || []).map((x) => String(x)),
+    ...(me.friends || []).map((x) => String(x)),
+  ]);
+
+  // Top users by followers
+  const topByFollowers = await User.aggregate([
+    {
+      $project: {
+        _id: 1,
+        followersCount: { $size: { $ifNull: ["$followers", []] } },
+      },
+    },
+    { $match: { followersCount: { $gt: 0 } } },
+    { $sort: { followersCount: -1 } },
+    { $limit: 50 },
+  ]);
+
+  // Top users by total likes on their threads (sum of likes array length)
+  const topByLikes = await Thread.aggregate([
+    {
+      $group: {
+        _id: "$author",
+        totalLikes: {
+          $sum: { $size: { $ifNull: ["$likes", []] } },
+        },
+      },
+    },
+    { $match: { totalLikes: { $gt: 0 } } },
+    { $sort: { totalLikes: -1 } },
+    { $limit: 50 },
+  ]);
+  // Build quick lookup maps
+  const followersMap = new Map(topByFollowers.map((u) => [String(u._id), u.followersCount]));
+  const likesMap = new Map(topByLikes.map((g) => [String(g._id), g.totalLikes]));
+
+  // Union pool from both top lists (dedup + exclude)
+  const unionPool = [];
+  const seen = new Set();
+  for (const u of topByFollowers) {
+    const id = String(u._id);
+    if (!excludeSet.has(id) && !seen.has(id)) {
+      seen.add(id);
+      unionPool.push(id);
+    }
+  }
+  for (const g of topByLikes) {
+    const id = String(g._id);
+    if (!excludeSet.has(id) && !seen.has(id)) {
+      seen.add(id);
+      unionPool.push(id);
+    }
+  }
+
+  // Rank by followersCount desc then totalLikes desc
+  const ranked = unionPool
+    .map((id) => ({
+      id,
+      followersCount: followersMap.get(id) || 0,
+      totalLikes: likesMap.get(id) || 0,
+    }))
+    .sort((a, b) => {
+      if (b.followersCount !== a.followersCount) return b.followersCount - a.followersCount;
+      return b.totalLikes - a.totalLikes;
+    });
+
+  const top3 = ranked.slice(0, 3).map((r) => r.id);
+
+  // Build random 2 from remaining (excluding top3 and excluded)
+  const excludeIds = new Set([...excludeSet, ...top3]);
+  const randomSource = await User.aggregate([
+    { $match: { _id: { $nin: Array.from(excludeIds).map((s) => new mongoose.Types.ObjectId(s)) } } },
+    { $sample: { size: 50 } },
+    { $project: { _id: 1 } },
+  ]);
+  const randomIds = [];
+  for (const s of randomSource) {
+    const id = String(s._id);
+    if (!excludeIds.has(id)) randomIds.push(id);
+    if (randomIds.length >= 2) break;
+  }
+
+  // Final pick: top3 + up to 2 random
+  const pick = [...top3, ...randomIds];
+
+  // If still <5, try to pad from ranked remainder
+  if (pick.length < 5) {
+    for (const r of ranked) {
+      if (pick.length >= 5) break;
+      if (!pick.includes(r.id)) pick.push(r.id);
+    }
+  }
+
+  const users = await User.find({ _id: { $in: pick } }).select(
+    "username isPro badges avatarKey followers"
+  );
+
+  // Preserve pick order
+  const orderMap = new Map(pick.map((id, i) => [String(id), i]));
+  users.sort((a, b) => (orderMap.get(String(a._id)) ?? 0) - (orderMap.get(String(b._id)) ?? 0));
+
+  // Attach avatarUrl
+  const result = await Promise.all(
+    users.map(async (u) => {
+      let avatarUrl = null;
+      if (u.avatarKey) {
+        try {
+          avatarUrl = await getSignedMediaUrl(u.avatarKey, 900);
+        } catch {}
+      }
+      return {
+        _id: u._id,
+        username: u.username,
+        isPro: u.isPro,
+        badges: u.badges || [],
+        avatarUrl,
+        followersCount: Array.isArray(u.followers) ? u.followers.length : 0,
+      };
+    })
+  );
+
+  res.json({ success: true, data: result.slice(0, 5) });
 });

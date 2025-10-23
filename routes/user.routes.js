@@ -17,6 +17,7 @@ import {
   getUserById,
   followUser,
   unfollowUser,
+  getFollowSuggestions,
 } from "../controllers/user.controller.js";
 import { profileUpload } from "../middleware/profileUpload.js";
 
@@ -44,6 +45,9 @@ router.get("/search", authMiddleware, searchUsers);
 // Follow/Unfollow
 router.post("/:id/follow", authMiddleware, followUser);
 router.delete("/:id/follow", authMiddleware, unfollowUser);
+
+// Follow suggestions
+router.get("/suggestions", authMiddleware, getFollowSuggestions);
 
 // Public profile
 router.get("/:id", authMiddleware, getUserById);

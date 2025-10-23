@@ -205,6 +205,8 @@ export const userApi = {
   unfollowUser: (userId, token) => {
     return request(`/users/${userId}/follow`, "DELETE", undefined, token);
   },
+  // Follow suggestions
+  getFollowSuggestions: (token) => request(`/users/suggestions`, "GET", undefined, token),
 };
 
 // Notifications API
