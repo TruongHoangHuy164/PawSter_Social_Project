@@ -10,11 +10,16 @@ import https from "https";
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1";
 // Choose a sensible default model; you can override via env or per-call
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "google/shieldgemma-2-9b";
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "mistralai/mistral-7b-instruct:free";
 // Allow specialized models per modality (text vs image)
-const TEXT_MODERATION_MODEL = process.env.TEXT_MODERATION_MODEL || OPENROUTER_MODEL || "google/shieldgemma-2-9b";
-// Default to a fast, vision-capable model; allow overriding to ShieldGemma/Mistral Vision via env
-const IMAGE_MODERATION_MODEL = process.env.IMAGE_MODERATION_MODEL || "google/gemini-1.5-flash"; // e.g., "google/gemini-1.5-flash", "google/shieldgemma-2-9b:vision", "mistralai/mistral-small-3.2:vision"
+const TEXT_MODERATION_MODEL = process.env.TEXT_MODERATION_MODEL || OPENROUTER_MODEL || "mistralai/mistral-7b-instruct:free";
+// Vision model for direct image understanding. If a non-vision model (like Mistral 7B) is set here,
+// we'll automatically switch to a caption->classify pipeline using Mistral for the final decision.
+const IMAGE_MODERATION_MODEL = process.env.IMAGE_MODERATION_MODEL || "qwen/qwen2.5-vl-72b-instruct:free"; // e.g., gemini-1.5, qwen2.5-vl, llava, gpt-4o
+// Dedicated caption model (vision) to describe images before sending to a text-only classifier (Mistral)
+const CAPTION_MODEL = process.env.CAPTION_MODEL || "qwen/qwen2.5-vl-72b-instruct:free";
+// Text classifier for image descriptions (defaults to Mistral 7B Instruct)
+const MISTRAL_IMAGE_TEXT_MODEL = process.env.MISTRAL_IMAGE_TEXT_MODEL || TEXT_MODERATION_MODEL || "mistralai/mistral-7b-instruct:free";
 const MOD_FAILSAFE_FLAG = String(process.env.MOD_FAILSAFE_FLAG || "0") === "1";
 
 // These headers are encouraged by OpenRouter for attribution
@@ -27,6 +32,10 @@ const MOD_IMAGE_AI_ONLY_IF_REKOGNITION_FLAGGED = String(process.env.MOD_IMAGE_AI
 const MOD_IMAGE_MAX = Math.max(1, Number(process.env.MOD_IMAGE_MAX || 6)); // limit images per call
 const MOD_TEXT_MAX_TOKENS = Math.max(64, Number(process.env.MOD_TEXT_MAX_TOKENS || 160));
 const MOD_IMAGE_MAX_TOKENS = Math.max(128, Number(process.env.MOD_IMAGE_MAX_TOKENS || 220));
+
+function isVisionModel(model = "") {
+  return /(gemini|qwen|llava|:vision|gpt-4o|omni|vision)/i.test(String(model));
+}
 
 function ensureConfigured() {
   if (!OPENROUTER_API_KEY) {
@@ -327,12 +336,143 @@ export async function checkImageSensitivity({ imageKeys = [], imageUrls = [] } =
     }
   }
 
+  // Helper: caption images with a vision model and then classify with Mistral (text-only)
+  async function captionThenClassify(urls) {
+    if (!urls || urls.length === 0) return [];
+    // 2a) Caption with a vision model
+    let captions = [];
+    try {
+      const capSys = [
+        "Bạn là hệ thống mô tả ảnh để kiểm duyệt.",
+        "Trả về mảng JSON: [{url:string, description:string, tags:string[]}]",
+        "Description ngắn gọn, khách quan; tags gồm các từ như 'nudity_partial', 'nudity_explicit', 'violence_graphic', 'violence_non_graphic', 'weapons', 'hate_symbols', 'self_harm', 'drugs', 'alcohol', 'harassment' nếu có.",
+        "CHỈ trả về JSON hợp lệ (mảng).",
+      ].join(" \n");
+      const capVariants = [
+        urls.slice(0, MOD_IMAGE_MAX).map((u) => ({ type: "image_url", image_url: { url: u } })),
+        urls.slice(0, MOD_IMAGE_MAX).map((u) => ({ type: "image_url", image_url: u })),
+        urls.slice(0, MOD_IMAGE_MAX).map((u) => ({ type: "input_image", image_url: u })),
+      ];
+      let parsed = null;
+      for (let vi = 0; vi < capVariants.length && !parsed; vi++) {
+        const contentTypes = vi === 2 ? { textType: "input_text" } : { textType: "text" };
+        const userContent = [
+          { type: contentTypes.textType, text: "Mô tả các ảnh sau và đánh tag nếu có nội dung nhạy cảm." },
+          ...capVariants[vi],
+        ];
+        try {
+          const { text: capOut } = await chat({
+            messages: [
+              { role: "system", content: capSys },
+              { role: "user", content: userContent },
+            ],
+            model: CAPTION_MODEL,
+            temperature: 0,
+            max_tokens: MOD_IMAGE_MAX_TOKENS,
+          });
+          const match = capOut.match(/\[[\s\S]*\]/);
+          if (match) parsed = JSON.parse(match[0]);
+        } catch {
+          continue;
+        }
+      }
+      if (Array.isArray(parsed)) captions = parsed;
+    } catch (e) {
+      console.warn("[moderation] Captioning failed:", e?.message || e);
+    }
+
+    // 2b) Classify with Mistral on text descriptions
+    if (!captions.length) return [];
+    try {
+      const clsSys = [
+        "Bạn là hệ thống kiểm duyệt hình ảnh dựa trên mô tả (tiếng Việt).",
+        "Input là mảng các item {url, description, tags}.",
+        "Trả về mảng JSON: mỗi item {url:string, score:0..1, categories:string[], decision:'APPROVE'|'FLAG'|'REJECT'}.",
+        "Quy tắc: REJECT cho nudity_explicit/sexual_activity/violence_graphic/ấu dâm; FLAG cho nudity_partial/sexual_context/violence_non_graphic/hate_symbols.",
+        "CHỈ trả về JSON hợp lệ (mảng).",
+      ].join(" \n");
+      const { text: out } = await chat({
+        messages: [
+          { role: "system", content: clsSys },
+          { role: "user", content: `Dữ liệu: ${JSON.stringify(captions)}` },
+        ],
+        model: MISTRAL_IMAGE_TEXT_MODEL,
+        temperature: 0,
+        max_tokens: MOD_IMAGE_MAX_TOKENS,
+      });
+      const match = out.match(/\[[\s\S]*\]/);
+      const parsed = match ? JSON.parse(match[0]) : [];
+      const mapped = [];
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          const url = item.url || null;
+          const score = Number(item.score) || 0;
+          const rawCats = Array.isArray(item.categories) ? item.categories : [];
+          const cats = new Set();
+          for (const c of rawCats) {
+            const s = String(c || '').toLowerCase();
+            if (/nudity_explicit|sexual_activity/.test(s)) cats.add("sexual_explicit");
+            if (/nudity_partial|sexual_context|suggestive/.test(s)) cats.add("sexual_soft");
+            if (/violence_graphic|gore|blood/.test(s)) cats.add("violence_hard");
+            if (/violence_non_graphic|fight|weapon/.test(s)) cats.add("violence_soft");
+            if (/hate|extremist/.test(s)) cats.add("hate");
+            if (/self_harm|suicide/.test(s)) cats.add("self_harm");
+            if (/harassment/.test(s)) cats.add("harassment");
+            if (/drugs|alcohol/.test(s)) cats.add("other");
+          }
+          let decision = item.decision || (score >= hard ? "REJECT" : score >= soft ? "FLAG" : "APPROVE");
+          const categories = Array.from(cats).length ? Array.from(cats) : ["safe"];
+          mapped.push({ url, score, categories, decision, source: "mistral+caption" });
+        }
+      }
+      return mapped;
+    } catch (e) {
+      console.warn("[moderation] Mistral classification failed:", e?.message || e);
+      return [];
+    }
+  }
+
+  // Helper: simple YES/NO fallback using a vision-capable model
+  async function yesNoVision(urls, model) {
+    const out = [];
+    const chosen = urls.slice(0, MOD_IMAGE_MAX);
+    for (const u of chosen) {
+      try {
+        const sys = "Bạn chỉ trả lời YES hoặc NO. Câu hỏi: Ảnh này có chứa nội dung nhạy cảm (khỏa thân, tình dục, bạo lực, thù hằn, tự hại, ma túy, quấy rối) không?";
+        const user = [
+          { type: "text", text: "Trả lời YES hoặc NO." },
+          { type: "image_url", image_url: { url: u } },
+        ];
+        const { text } = await chat({
+          messages: [
+            { role: "system", content: sys },
+            { role: "user", content: user },
+          ],
+          model,
+          temperature: 0,
+          max_tokens: 10,
+        });
+        const ans = String(text || "").trim().toUpperCase();
+        if (ans.includes("YES")) {
+          out.push({ url: u, score: Math.max(0.61, Number(process.env.MOD_SOFT || 0.6) + 0.01), categories: ["potential_sensitive"], decision: "FLAG", source: "vision-yesno" });
+        } else if (ans.includes("NO")) {
+          out.push({ url: u, score: 0, categories: ["safe"], decision: "APPROVE", source: "vision-yesno" });
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+    return out;
+  }
+
   // 2) AI Vision for URLs (if provided)
   const aiShouldRun = Array.isArray(imageUrls) && imageUrls.length && (
     !MOD_IMAGE_AI_ONLY_IF_REKOGNITION_FLAGGED || rekognitionMaxScore >= soft
   );
   if (aiShouldRun) {
     try {
+      // If the selected model supports vision, use direct vision moderation.
+      if (isVisionModel(IMAGE_MODERATION_MODEL)) {
       const sys = [
         "Bạn là hệ thống kiểm duyệt hình ảnh. Phân loại CHI TIẾT theo danh mục sau và quy đổi về nhóm tổng quát:",
         "- Nudity: nudity_explicit, nudity_partial, sexual_activity, sexual_context",
@@ -380,7 +520,7 @@ export async function checkImageSensitivity({ imageKeys = [], imageUrls = [] } =
         }
       }
 
-      if (Array.isArray(parsed)) {
+       if (Array.isArray(parsed)) {
         for (const item of parsed) {
           const url = item.url || null;
           const score = Number(item.score) || 0;
@@ -403,6 +543,21 @@ export async function checkImageSensitivity({ imageKeys = [], imageUrls = [] } =
           let decision = item.decision || (score >= hard ? "REJECT" : score >= soft ? "FLAG" : "APPROVE");
           const categories = Array.from(cats).length ? Array.from(cats) : ["safe"];
           results.push({ url, score, categories, decision, source: "ai", details: Array.from(allCats) });
+        }
+      }
+        // If parsing failed or returned empty, fallback to YES/NO per image
+        if ((!Array.isArray(parsed) || parsed.length === 0) && imageUrls.length) {
+          const yn = await yesNoVision(imageUrls, IMAGE_MODERATION_MODEL);
+          for (const m of yn) results.push(m);
+        }
+      } else {
+        // Fallback: Use caption->classify with Mistral 7B (text-only)
+        const mapped = await captionThenClassify(imageUrls);
+        for (const m of mapped) results.push(m);
+        // If still empty, try a YES/NO fallback with the caption model (vision)
+        if (results.length === 0 && imageUrls.length) {
+          const yn = await yesNoVision(imageUrls, CAPTION_MODEL);
+          for (const m of yn) results.push(m);
         }
       }
     } catch (e) {
