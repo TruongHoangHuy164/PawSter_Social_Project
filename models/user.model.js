@@ -18,7 +18,21 @@ const userSchema = new mongoose.Schema(
     isPro: { type: Boolean, default: false },
     proExpiry: { type: Date },
     badges: [{ type: String }],
+    // Legacy admin flag (kept for compatibility); prefer using role below
     isAdmin: { type: Boolean, default: false },
+    // Role-based access control
+    role: { type: String, enum: ["user", "moderator", "admin"], default: "user", index: true },
+    // Account status and locking
+    status: { type: String, enum: ["active", "locked"], default: "active", index: true },
+    lockedUntil: { type: Date },
+    // Admin warnings history
+    warnings: [
+      {
+        message: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now },
+        by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      },
+    ],
     avatarKey: { type: String },
     coverKey: { type: String },
     bio: { type: String, maxlength: 300 },
@@ -50,6 +64,17 @@ userSchema.methods.comparePassword = function (candidate) {
 
 userSchema.virtual("friendLimit").get(function () {
   return this.isPro ? 200 : 20;
+});
+
+// Virtual convenience flags
+userSchema.virtual("isLocked").get(function () {
+  if (this.status === "locked") return true;
+  if (this.lockedUntil && this.lockedUntil > new Date()) return true;
+  return false;
+});
+
+userSchema.virtual("isModerator").get(function () {
+  return this.role === "moderator" || this.role === "admin" || !!this.isAdmin;
 });
 
 export const User = mongoose.model("User", userSchema);

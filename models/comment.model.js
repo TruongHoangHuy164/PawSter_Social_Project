@@ -11,6 +11,16 @@ const mediaSubSchema = new mongoose.Schema({
   thumbnailUrl: { type: String },                 // future video/image optimization
 }, { _id: false, timestamps: false });
 
+const moderationSubSchema = new mongoose.Schema({
+  score: { type: Number, default: 0 },
+  categories: { type: [String], default: [] },
+  decision: { type: String, enum: ["APPROVE", "FLAG", "REJECT"], default: "APPROVE" },
+  labels: { type: [String], default: [] },
+  notes: { type: String },
+  reviewedAt: { type: Date },
+  reviewer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+}, { _id: false, timestamps: false });
+
 const commentSchema = new mongoose.Schema({
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   threadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Thread', required: true },
@@ -19,6 +29,8 @@ const commentSchema = new mongoose.Schema({
   parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment', default: null }, // for nested replies
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   likesCount: { type: Number, default: 0 },
+  status: { type: String, enum: ['APPROVED', 'FLAGGED', 'REJECTED'], default: 'APPROVED', index: true },
+  moderation: { type: moderationSubSchema, default: undefined },
 }, { timestamps: { createdAt: 'createdAt', updatedAt: false } });
 
 commentSchema.pre('validate', function(next) {
@@ -38,6 +50,7 @@ commentSchema.pre('save', function(next) {
 commentSchema.index({ threadId: 1, createdAt: -1 });
 commentSchema.index({ parentId: 1, createdAt: 1 });
 commentSchema.index({ author: 1, createdAt: -1 });
+commentSchema.index({ status: 1, createdAt: -1 });
 
 export const Comment = mongoose.model('Comment', commentSchema);
 

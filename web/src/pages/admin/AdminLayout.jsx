@@ -20,6 +20,8 @@ export default function AdminLayout(){
         <nav className="space-y-1">
           <NavLink to="/admin" end className={({isActive})=>`block px-2 py-1 rounded ${isActive?'bg-black/10 dark:bg-white/10':''}`}>Tổng quan</NavLink>
           <NavLink to="/admin/users" className={({isActive})=>`block px-2 py-1 rounded ${isActive?'bg-black/10 dark:bg-white/10':''}`}>Người dùng</NavLink>
+          <NavLink to="/admin/moderation" className={({isActive})=>`block px-2 py-1 rounded ${isActive?'bg-black/10 dark:bg-white/10':''}`}>Kiểm duyệt</NavLink>
+          <NavLink to="/admin/reports" className={({isActive})=>`block px-2 py-1 rounded ${isActive?'bg-black/10 dark:bg-white/10':''}`}>Báo cáo</NavLink>
           <NavLink to="/admin/threads" className={({isActive})=>`block px-2 py-1 rounded ${isActive?'bg-black/10 dark:bg-white/10':''}`}>Bài viết</NavLink>
           <NavLink to="/admin/payments" className={({isActive})=>`block px-2 py-1 rounded ${isActive?'bg-black/10 dark:bg-white/10':''}`}>Thanh toán</NavLink>
           <button

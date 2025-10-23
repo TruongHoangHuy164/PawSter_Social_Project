@@ -21,6 +21,8 @@ import AdminDashboard from "./admin/Dashboard.jsx";
 import AdminUsers from "./admin/Users.jsx";
 import AdminThreads from "./admin/Threads.jsx";
 import AdminPayments from "./admin/Payments.jsx";
+import AdminModeration from "./admin/Moderation.jsx";
+import AdminReports from "./admin/Reports.jsx";
 import LayoutShell from "../ui/LayoutShell.jsx";
 
 const Protected = ({ children }) => {
@@ -147,6 +149,8 @@ export default function App() {
             >
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsers />} />
+              <Route path="moderation" element={<AdminModeration />} />
+              <Route path="reports" element={<AdminReports />} />
               <Route path="threads" element={<AdminThreads />} />
               <Route path="payments" element={<AdminPayments />} />
             </Route>

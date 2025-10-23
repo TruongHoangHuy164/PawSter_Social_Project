@@ -192,11 +192,20 @@ router.get("/stats", async (req, res) => {
   });
 });
 
+// Users with filters: q (username/email), role, status
 router.get("/users", async (req, res) => {
-  const items = await User.find()
+  const { q, role, status } = req.query;
+  const filter = {};
+  if (q) {
+    const rx = new RegExp(String(q).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "i");
+    filter.$or = [{ username: rx }, { email: rx }];
+  }
+  if (role) filter.role = role;
+  if (status) filter.status = status;
+  const items = await User.find(filter)
     .select("-password")
     .sort({ createdAt: -1 })
-    .limit(200);
+    .limit(300);
   res.json({ success: true, data: items });
 });
 
@@ -285,17 +294,69 @@ router.get("/users/stats", async (req, res) => {
   });
 });
 
+// Basic updates (pro/admin/badges/role/status)
 router.patch("/users/:id", async (req, res) => {
-  const allowed = ["isPro", "isAdmin", "badges"];
+  const allowed = ["isPro", "isAdmin", "badges", "role", "status", "lockedUntil"];
   const updates = {};
   for (const k of allowed) if (k in req.body) updates[k] = req.body[k];
   const user = await User.findByIdAndUpdate(req.params.id, updates, {
     new: true,
   }).select("-password");
-  if (!user)
-    return res.status(404).json({ success: false, message: "Not found" });
+  if (!user) return res.status(404).json({ success: false, message: "Not found" });
   res.json({ success: true, data: user });
 });
+
+// Lock user (temporary or immediate). Accepts { hours?: number, until?: ISO, reason?: string }
+router.post("/users/:id/lock", asyncHandler(async (req, res) => {
+  const { hours, until, reason } = req.body || {};
+  const u = await User.findById(req.params.id);
+  if (!u) return res.status(404).json({ success: false, message: "Not found" });
+  let lockedUntil = until ? new Date(until) : undefined;
+  if (!lockedUntil && hours) lockedUntil = new Date(Date.now() + Number(hours) * 3600 * 1000);
+  u.status = "locked";
+  u.lockedUntil = lockedUntil || new Date(Date.now() + 24 * 3600 * 1000);
+  if (reason) {
+    u.warnings = u.warnings || [];
+    u.warnings.push({ message: `LOCK: ${reason}`, by: req.user._id });
+  }
+  await u.save();
+  res.json({ success: true, data: { _id: u._id, status: u.status, lockedUntil: u.lockedUntil } });
+}));
+
+// Unlock user
+router.post("/users/:id/unlock", asyncHandler(async (req, res) => {
+  const u = await User.findById(req.params.id);
+  if (!u) return res.status(404).json({ success: false, message: "Not found" });
+  u.status = "active";
+  u.lockedUntil = null;
+  await u.save();
+  res.json({ success: true, data: { _id: u._id, status: u.status } });
+}));
+
+// Warn user { message }
+router.post("/users/:id/warn", asyncHandler(async (req, res) => {
+  const { message } = req.body || {};
+  if (!message) return res.status(400).json({ success: false, message: "message required" });
+  const u = await User.findById(req.params.id).select("-password");
+  if (!u) return res.status(404).json({ success: false, message: "Not found" });
+  u.warnings = u.warnings || [];
+  u.warnings.push({ message, by: req.user._id });
+  await u.save();
+  res.json({ success: true, data: u });
+}));
+
+// Reset password (admin action) { newPassword }
+router.post("/users/:id/reset-password", asyncHandler(async (req, res) => {
+  const { newPassword } = req.body || {};
+  if (!newPassword || String(newPassword).length < 6) {
+    return res.status(400).json({ success: false, message: "newPassword >= 6 chars" });
+  }
+  const u = await User.findById(req.params.id);
+  if (!u) return res.status(404).json({ success: false, message: "Not found" });
+  u.password = newPassword; // will be hashed by pre('save') hook
+  await u.save();
+  res.json({ success: true, message: "Password reset" });
+}));
 
 router.get("/threads", async (req, res) => {
   const items = await Thread.find()
@@ -350,6 +411,83 @@ router.post("/moderation/threads/:id/reject", asyncHandler(async (req, res) => {
   };
   await t.save();
   res.json({ success: true, data: t });
+}));
+
+// ===== Comment Moderation =====
+import { Comment } from "../models/comment.model.js";
+
+router.get("/moderation/comments", asyncHandler(async (req, res) => {
+  const { status = "FLAGGED" } = req.query;
+  const items = await Comment.find({ status })
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .populate("author", "username isPro")
+    .populate("threadId", "content author")
+  res.json({ success: true, data: items });
+}));
+
+router.post("/moderation/comments/:id/approve", asyncHandler(async (req, res) => {
+  const c = await Comment.findById(req.params.id);
+  if (!c) return res.status(404).json({ success: false, message: "Not found" });
+  c.status = "APPROVED";
+  c.moderation = {
+    ...(c.moderation || {}),
+    notes: (`${c.moderation?.notes || ""}\nApproved by ${req.user.username} (${req.user._id})`).trim(),
+    reviewer: req.user._id,
+    reviewedAt: new Date(),
+  };
+  await c.save();
+  res.json({ success: true, data: c });
+}));
+
+router.post("/moderation/comments/:id/reject", asyncHandler(async (req, res) => {
+  const c = await Comment.findById(req.params.id);
+  if (!c) return res.status(404).json({ success: false, message: "Not found" });
+  c.status = "REJECTED";
+  c.moderation = {
+    ...(c.moderation || {}),
+    notes: (`${c.moderation?.notes || ""}\nRejected by ${req.user.username} (${req.user._id})`).trim(),
+    reviewer: req.user._id,
+    reviewedAt: new Date(),
+  };
+  await c.save();
+  res.json({ success: true, data: c });
+}));
+
+router.delete("/moderation/comments/:id", asyncHandler(async (req, res) => {
+  const c = await Comment.findById(req.params.id);
+  if (!c) return res.status(404).json({ success: false, message: "Not found" });
+  await c.deleteOne();
+  res.json({ success: true, message: "Deleted" });
+}));
+
+// ===== Reports =====
+import { Report } from "../models/report.model.js";
+
+router.get("/reports", asyncHandler(async (req, res) => {
+  const { status, type } = req.query;
+  const filter = {};
+  if (status) filter.status = status;
+  if (type) filter.type = type;
+  const items = await Report.find(filter)
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .populate("createdBy", "username")
+    .populate("handledBy", "username");
+  res.json({ success: true, data: items });
+}));
+
+router.post("/reports/:id/resolve", asyncHandler(async (req, res) => {
+  const { action = "RESOLVED", notes } = req.body || {};
+  const r = await Report.findById(req.params.id);
+  if (!r) return res.status(404).json({ success: false, message: "Not found" });
+  r.status = action === "REJECTED" ? "REJECTED" : "RESOLVED";
+  r.handledBy = req.user._id;
+  r.handledAt = new Date();
+  r.history = r.history || [];
+  r.history.push({ action: r.status, by: req.user._id, at: new Date(), notes });
+  await r.save();
+  res.json({ success: true, data: r });
 }));
 
 router.get("/payments", async (req, res) => {

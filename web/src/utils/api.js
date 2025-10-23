@@ -31,6 +31,45 @@ export const api = {
   rawPatch: (p, formData, t) => request(p, "PATCH", formData, t),
 };
 
+// Admin API helpers
+export const adminApi = {
+  // Users
+  listUsers: ({ q, role, status } = {}, token) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (role) params.set("role", role);
+    if (status) params.set("status", status);
+    const qs = params.toString();
+    return request(`/admin/users${qs ? `?${qs}` : ""}`, "GET", undefined, token);
+  },
+  updateUser: (id, patch, token) => request(`/admin/users/${id}`, "PATCH", patch, token),
+  lockUser: (id, body, token) => request(`/admin/users/${id}/lock`, "POST", body, token),
+  unlockUser: (id, token) => request(`/admin/users/${id}/unlock`, "POST", undefined, token),
+  warnUser: (id, message, token) => request(`/admin/users/${id}/warn`, "POST", { message }, token),
+  resetPassword: (id, newPassword, token) => request(`/admin/users/${id}/reset-password`, "POST", { newPassword }, token),
+
+  // Moderation
+  listFlaggedThreads: (status = "FLAGGED", token) => request(`/admin/moderation/threads?status=${status}`, "GET", undefined, token),
+  approveThread: (id, token) => request(`/admin/moderation/threads/${id}/approve`, "POST", undefined, token),
+  rejectThread: (id, token) => request(`/admin/moderation/threads/${id}/reject`, "POST", undefined, token),
+  deleteThread: (id, token) => request(`/admin/threads/${id}`, "DELETE", undefined, token),
+
+  listFlaggedComments: (status = "FLAGGED", token) => request(`/admin/moderation/comments?status=${status}`, "GET", undefined, token),
+  approveComment: (id, token) => request(`/admin/moderation/comments/${id}/approve`, "POST", undefined, token),
+  rejectComment: (id, token) => request(`/admin/moderation/comments/${id}/reject`, "POST", undefined, token),
+  deleteComment: (id, token) => request(`/admin/moderation/comments/${id}`, "DELETE", undefined, token),
+
+  // Reports
+  listReports: ({ status, type } = {}, token) => {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (type) params.set("type", type);
+    const qs = params.toString();
+    return request(`/admin/reports${qs ? `?${qs}` : ""}`, "GET", undefined, token);
+  },
+  resolveReport: (id, action, notes, token) => request(`/admin/reports/${id}/resolve`, "POST", { action, notes }, token),
+};
+
 export const authApi = {
   requestPasswordOtp: (token) => request('/auth/password/otp', 'POST', undefined, token),
   changePasswordWithOtp: ({ otp, newPassword }, token) => request('/auth/password/change', 'POST', { otp, newPassword }, token),

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { api } from "../../utils/api.js";
+import { api, adminApi } from "../../utils/api.js";
 import { useAuth } from "../../state/auth.jsx";
 
 export default function Users() {
@@ -9,10 +9,13 @@ export default function Users() {
   const [period, setPeriod] = useState("30d");
   const [view, setView] = useState("list"); // 'list' or 'stats'
   const [err, setErr] = useState("");
+  const [q, setQ] = useState("");
+  const [role, setRole] = useState("");
+  const [status, setStatus] = useState("");
 
   const load = async () => {
     try {
-      const res = await api.get("/admin/users", token);
+      const res = await adminApi.listUsers({ q, role: role || undefined, status: status || undefined }, token);
       setItems(res.data.data);
     } catch (e) {
       setErr(e.message);
@@ -31,7 +34,8 @@ export default function Users() {
 
   useEffect(() => {
     load();
-  }, [token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, q, role, status]);
 
   useEffect(() => {
     if (view === "stats") {
@@ -41,11 +45,46 @@ export default function Users() {
 
   const update = async (id, patch) => {
     try {
-      await api.patch(`/admin/users/${id}`, patch, token);
+      await adminApi.updateUser(id, patch, token);
       await load();
     } catch (e) {
       alert(e.message);
     }
+  };
+
+  const lockUser = async (id) => {
+    const hoursStr = prompt("Khoá bao lâu (giờ)? Để trống = 24h", "24");
+    const hours = hoursStr ? Number(hoursStr) : 24;
+    const reason = prompt("Lý do khoá?", "Vi phạm chính sách");
+    try {
+      await adminApi.lockUser(id, { hours, reason }, token);
+      await load();
+    } catch (e) { alert(e.message); }
+  };
+
+  const unlockUser = async (id) => {
+    try {
+      await adminApi.unlockUser(id, token);
+      await load();
+    } catch (e) { alert(e.message); }
+  };
+
+  const warnUser = async (id) => {
+    const message = prompt("Nội dung cảnh cáo:");
+    if (!message) return;
+    try {
+      await adminApi.warnUser(id, message, token);
+      await load();
+    } catch (e) { alert(e.message); }
+  };
+
+  const resetPassword = async (id) => {
+    const newPassword = prompt("Mật khẩu mới (>=6 ký tự):");
+    if (!newPassword) return;
+    try {
+      await adminApi.resetPassword(id, newPassword, token);
+      alert("Đã đặt lại mật khẩu");
+    } catch (e) { alert(e.message); }
   };
 
   // Calculate max for chart scaling
@@ -580,15 +619,52 @@ export default function Users() {
 
       {/* List View */}
       {view === "list" && (
-        <div className="card p-4 overflow-auto">
+        <div className="card p-4 overflow-auto space-y-3">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Tìm theo username/email..."
+              className="px-3 py-2 rounded border bg-[var(--panel)] border-[var(--panel-border)] text-sm"
+              style={{ minWidth: 240 }}
+            />
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="px-3 py-2 rounded border bg-[var(--panel)] border-[var(--panel-border)] text-sm"
+            >
+              <option value="">Tất cả vai trò</option>
+              <option value="user">User</option>
+              <option value="moderator">Moderator</option>
+              <option value="admin">Admin</option>
+            </select>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="px-3 py-2 rounded border bg-[var(--panel)] border-[var(--panel-border)] text-sm"
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="active">Active</option>
+              <option value="locked">Locked</option>
+            </select>
+            <button
+              onClick={load}
+              className="ml-auto px-3 py-2 rounded border bg-black text-white dark:bg-white dark:text-black text-sm"
+            >
+              Làm mới
+            </button>
+          </div>
+
+          {/* Table */}
           <table className="min-w-full text-sm">
             <thead>
               <tr className="text-left">
                 <th className="p-2">User</th>
                 <th className="p-2">Email</th>
+                <th className="p-2">Vai trò</th>
+                <th className="p-2">Trạng thái</th>
                 <th className="p-2">Pro</th>
-                <th className="p-2">Admin</th>
-                <th className="p-2">Badges</th>
                 <th className="p-2">Hành động</th>
               </tr>
             </thead>
@@ -596,47 +672,74 @@ export default function Users() {
               {items.map((u) => (
                 <tr
                   key={u._id}
-                  className="border-t border-[var(--panel-border)]"
+                  className="border-t border-[var(--panel-border)] hover:bg-[var(--card-hover)]"
                 >
                   <td className="p-2">{u.username}</td>
                   <td className="p-2">{u.email}</td>
                   <td className="p-2">
-                    <input
-                      type="checkbox"
-                      checked={!!u.isPro}
+                    <select
+                      value={u.role || (u.isAdmin ? "admin" : "user")}
                       onChange={(e) =>
-                        update(u._id, { isPro: e.target.checked })
+                        update(u._id, {
+                          role: e.target.value,
+                          isAdmin: e.target.value === "admin",
+                        })
                       }
-                    />
+                      className="px-2 py-1 rounded border bg-[var(--panel)] border-[var(--panel-border)]"
+                    >
+                      <option value="user">User</option>
+                      <option value="moderator">Moderator</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </td>
+                  <td className="p-2">
+                    {u.status === "locked" || u.lockedUntil ? (
+                      <span className="px-2 py-1 rounded-full text-xs bg-red-600/10 border border-red-600/20 text-red-700 dark:text-red-400">
+                        Locked
+                        {u.lockedUntil
+                          ? ` đến ${new Date(u.lockedUntil).toLocaleString("vi-VN")}`
+                          : ""}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 rounded-full text-xs bg-green-600/10 border border-green-600/20 text-green-700 dark:text-green-400">
+                        Active
+                      </span>
+                    )}
                   </td>
                   <td className="p-2">
                     <input
                       type="checkbox"
-                      checked={!!u.isAdmin}
-                      onChange={(e) =>
-                        update(u._id, { isAdmin: e.target.checked })
-                      }
+                      checked={!!u.isPro}
+                      onChange={(e) => update(u._id, { isPro: e.target.checked })}
                     />
                   </td>
-                  <td className="p-2">{(u.badges || []).join(", ")}</td>
                   <td className="p-2 space-x-2">
+                    {u.status === "locked" || u.lockedUntil ? (
+                      <button
+                        className="px-2 py-1 text-xs rounded bg-green-600/80 text-white"
+                        onClick={() => unlockUser(u._id)}
+                      >
+                        Mở khoá
+                      </button>
+                    ) : (
+                      <button
+                        className="px-2 py-1 text-xs rounded bg-yellow-600/80 text-white"
+                        onClick={() => lockUser(u._id)}
+                      >
+                        Khoá
+                      </button>
+                    )}
                     <button
-                      className="px-2 py-1 text-xs rounded bg-black/10 dark:bg-white/10"
-                      onClick={() => {
-                        const val = prompt(
-                          "Nhập badges, phân tách bởi dấu phẩy",
-                          (u.badges || []).join(",")
-                        );
-                        if (val != null)
-                          update(u._id, {
-                            badges: val
-                              .split(",")
-                              .map((s) => s.trim())
-                              .filter(Boolean),
-                          });
-                      }}
+                      className="px-2 py-1 text-xs rounded bg-orange-600/80 text-white"
+                      onClick={() => warnUser(u._id)}
                     >
-                      Sửa badges
+                      Cảnh cáo
+                    </button>
+                    <button
+                      className="px-2 py-1 text-xs rounded bg-red-600/80 text-white"
+                      onClick={() => resetPassword(u._id)}
+                    >
+                      Reset mật khẩu
                     </button>
                   </td>
                 </tr>
