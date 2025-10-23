@@ -412,25 +412,144 @@ export const updateComment = asyncHandler(async (req, res) => {
 
   const rawContent = typeof req.body.content === 'string' ? req.body.content : '';
   const content = rawContent.trim();
+  const files = req.files || [];
+  const removedMedia = Array.isArray(req.body.removedMedia) 
+    ? req.body.removedMedia 
+    : (req.body.removedMedia ? [req.body.removedMedia] : []);
 
-  if (!content && (!comment.media || comment.media.length === 0)) {
+  // Validate files
+  if (files.length > MAX_FILES) {
+    return res.status(400).json({ success: false, message: `Max ${MAX_FILES} files` });
+  }
+  
+  const totalSize = files.reduce((a,f)=>a+f.size,0);
+  if (totalSize > MAX_TOTAL) {
+    return res.status(400).json({ success: false, message: 'Total media too large' });
+  }
+  
+  for (const f of files) {
+    if (f.size > MAX_FILE_SIZE) {
+      return res.status(400).json({ success: false, message: `${f.originalname} exceeds per-file size limit` });
+    }
+    if (!ALLOWED_PREFIX.some(p=>f.mimetype.startsWith(p))) {
+      return res.status(400).json({ success: false, message: `${f.originalname} unsupported type` });
+    }
+  }
+
+  // Get current media
+  let currentMedia = [...(comment.media || [])];
+  
+  // Remove specified media
+  const keysToDelete = [];
+  if (removedMedia.length > 0) {
+    currentMedia = currentMedia.filter(media => {
+      if (removedMedia.includes(String(media._id))) {
+        keysToDelete.push(media.key);
+        return false;
+      }
+      return true;
+    });
+  }
+
+  // Check if we'll exceed limit with new files
+  const finalMediaCount = currentMedia.length + files.length;
+  if (finalMediaCount > MAX_FILES) {
+    return res.status(400).json({ 
+      success: false, 
+      message: `Too many media files. Current: ${currentMedia.length}, Adding: ${files.length}, Max: ${MAX_FILES}` 
+    });
+  }
+
+  // Upload new media files
+  const concurrency = 3;
+  const queue = [...files];
+  const uploaded = [];
+  let failed = false;
+
+  async function worker() {
+    while (queue.length && !failed) {
+      const file = queue.shift();
+      try {
+        const { buffer, mimetype, originalname, size } = file;
+        const ext = originalname.includes('.') ? originalname.split('.').pop() : undefined;
+        const result = await uploadBuffer({ buffer, mimeType: mimetype, ext, userId: req.user._id });
+        uploaded.push({
+          key: result.key,
+          type: detectType(mimetype),
+          mimeType: mimetype,
+          size
+        });
+      } catch (e) {
+        console.error('Upload failed', e);
+        failed = true;
+      }
+    }
+  }
+
+  if (files.length) {
+    const workers = Array.from({ length: Math.min(concurrency, files.length) }, () => worker());
+    await Promise.all(workers);
+    if (failed) {
+      // rollback any uploaded keys
+      await deleteMediaKeys(uploaded.map(u=>u.key));
+      return res.status(500).json({ success: false, message: 'Media upload failed' });
+    }
+  }
+
+  // Combine current + new media
+  const finalMedia = [...currentMedia, ...uploaded];
+
+  // Validate final state
+  if (!content && finalMedia.length === 0) {
+    // Rollback uploads if validation fails
+    if (uploaded.length) {
+      await deleteMediaKeys(uploaded.map(u=>u.key));
+    }
     return res.status(400).json({ success: false, message: 'Content or media required' });
   }
   if (content.length > 500) {
+    // Rollback uploads if validation fails
+    if (uploaded.length) {
+      await deleteMediaKeys(uploaded.map(u=>u.key));
+    }
     return res.status(400).json({ success: false, message: 'Content too long' });
   }
 
-  comment.content = content;
-  await comment.save();
+  try {
+    // Update comment
+    comment.content = content;
+    comment.media = finalMedia;
+    await comment.save();
 
-  const populatedComment = await Comment.findById(comment._id)
-    .populate('author', 'username isPro badges')
-    .populate('parentId', 'author content');
+    // Delete old media files from S3
+    if (keysToDelete.length > 0) {
+      deleteMediaKeys(keysToDelete).catch(e => console.error('Delete old media keys failed', e));
+    }
 
-  const sanitized = populatedComment.toObject();
-  if (sanitized.media) {
-    sanitized.media = sanitized.media.map(({ key, type, mimeType, size, _id }) => ({ _id, key, type, mimeType, size }));
+    const populatedComment = await Comment.findById(comment._id)
+      .populate('author', 'username isPro badges')
+      .populate('parentId', 'author content');
+
+    const sanitized = populatedComment.toObject();
+    if (sanitized.media) {
+      sanitized.media = sanitized.media.map(({ key, type, mimeType, size, _id }) => ({ _id, key, type, mimeType, size }));
+    }
+
+    // Emit real-time update
+    if (req.io) {
+      req.io.to(`thread_${comment.threadId}`).emit('comment_updated', {
+        comment: sanitized,
+        threadId: comment.threadId
+      });
+    }
+
+    res.json({ success: true, data: sanitized });
+  } catch (e) {
+    console.error('Update comment error', e);
+    // Rollback uploads if DB save fails
+    if (uploaded.length) {
+      await deleteMediaKeys(uploaded.map(u=>u.key));
+    }
+    return res.status(500).json({ success: false, message: 'Update failed' });
   }
-
-  res.json({ success: true, data: sanitized });
 });

@@ -1,37 +1,86 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../state/auth.jsx";
+import { useSocket } from "../state/socket.jsx";
 import { api } from "../utils/api.js";
 
 export default function TrendingHashtags() {
   const { token } = useAuth();
+  const { socket } = useSocket();
   const navigate = useNavigate();
   const [trending, setTrending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("24h");
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
-  useEffect(() => {
-    const fetchTrending = async () => {
-      if (!token) return;
+  const fetchTrending = useCallback(async (silent = false) => {
+    if (!token) return;
 
-      setLoading(true);
-      try {
-        const response = await api.get(
-          `/threads/hashtags/trending?period=${period}&limit=10`,
-          token
-        );
-        if (response.data.success) {
-          setTrending(response.data.data.trending);
-        }
-      } catch (error) {
-        console.error("Error fetching trending hashtags:", error);
-      } finally {
-        setLoading(false);
+    if (!silent) setLoading(true);
+    try {
+      const response = await api.get(
+        `/threads/hashtags/trending?period=${period}&limit=10`,
+        token
+      );
+      if (response.data.success) {
+        setTrending(response.data.data.trending);
+        setLastRefresh(Date.now());
       }
+    } catch (error) {
+      console.error("Error fetching trending hashtags:", error);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [token, period]);
+
+  // Initial load and period change
+  useEffect(() => {
+    fetchTrending();
+  }, [fetchTrending]);
+
+  // WebSocket realtime updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleThreadCreated = (data) => {
+      console.log('🔥 New thread created, refreshing trending hashtags:', data);
+      // Refresh trending hashtags when new thread is created (silent refresh)
+      setTimeout(() => fetchTrending(true), 1000); // Small delay to let backend process
     };
 
-    fetchTrending();
-  }, [token, period]);
+    const handleThreadUpdated = (data) => {
+      console.log('📝 Thread updated, refreshing trending hashtags:', data);
+      // Refresh when thread is updated (hashtags might change)
+      setTimeout(() => fetchTrending(true), 1000);
+    };
+
+    const handleThreadDeleted = (data) => {
+      console.log('🗑️ Thread deleted, refreshing trending hashtags:', data);
+      // Refresh when thread is deleted (hashtag counts decrease)
+      setTimeout(() => fetchTrending(true), 1000);
+    };
+
+    // Listen to thread events that affect hashtag trending
+    socket.on('thread:created', handleThreadCreated);
+    socket.on('thread:updated', handleThreadUpdated);
+    socket.on('thread:deleted', handleThreadDeleted);
+
+    return () => {
+      socket.off('thread:created', handleThreadCreated);
+      socket.off('thread:updated', handleThreadUpdated);
+      socket.off('thread:deleted', handleThreadDeleted);
+    };
+  }, [socket, fetchTrending]);
+
+  // Auto refresh every 5 minutes to keep data fresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing trending hashtags');
+      fetchTrending(true); // Silent refresh
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [fetchTrending]);
 
   if (loading) {
     return (
@@ -70,6 +119,13 @@ export default function TrendingHashtags() {
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold flex items-center gap-2">
           🔥 Trending Today
+          {/* Live indicator */}
+          {Date.now() - lastRefresh < 30000 && (
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+          )}
         </h3>
         <select
           value={period}

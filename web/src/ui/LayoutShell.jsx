@@ -32,17 +32,15 @@ export default function LayoutShell(){
 
   return (
   <div className="min-h-screen flex flex-col pb-20 md:pb-0 transition-colors duration-200 bg-subtle-gradient">{/* pb for mobile bottom bar space */}
-      {/* Upgrade Banner */}
+      {/* Upgrade Banner - Full width at top */}
       {!user?.isAdmin && <UpgradeBanner />}
       
-      <main className="flex-1 pt-4">
-        <div className="w-full flex gap-6 px-4 md:px-6 md:pl-0 max-w-screen-2xl mx-auto">
-          {/* Left Sidebar (desktop only) */}
-          {!user?.isAdmin && (
-            <div className="hidden md:block w-64 flex-shrink-0">
-              <LeftSidebar theme={theme} setTheme={setTheme} />
-            </div>
-          )}
+      {/* Left Sidebar (desktop only) - Fixed position below banner */}
+      {!user?.isAdmin && <LeftSidebar theme={theme} setTheme={setTheme} />}
+      
+      <main className={`flex-1 pt-4 ${!user?.isAdmin ? 'md:ml-64' : ''}`}>
+        <div className="w-full flex gap-6 px-4 md:px-6 max-w-screen-2xl mx-auto">
+          {/* Left sidebar space is handled by margin-left on desktop, banner is full-width */}
           
           {/* Content */}
           <section className="flex-1 min-w-0 flex justify-center">

@@ -6,11 +6,12 @@ import ProBadge from "./ProBadge.jsx";
 import AvatarWithPlus from "./AvatarWithPlus.jsx";
 import CommentSection from "./CommentSection.jsx";
 import CommentInput from "./CommentInput.jsx";
+import ThreadEditor from "./ThreadEditor.jsx";
 import { api, threadApi, userApi } from "../utils/api.js";
 import { useAuth } from "../state/auth.jsx";
 import { renderContentWithHashtags } from "../utils/hashtag.jsx";
 
-export default function ThreadItem({ thread, onDelete, openComments = false }) {
+export default function ThreadItem({ thread, onDelete, onUpdated, openComments = false }) {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const mine = user && thread.author && thread.author._id === user._id;
@@ -34,6 +35,11 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
   const [reposted, setReposted] = useState(false);
   const [repostsCount, setRepostsCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(thread.content || '');
+  const [refreshKey, setRefreshKey] = useState(0); // Force re-render key
+  const dropdownRef = useRef(null);
   const isFlagged = thread?.status === "FLAGGED";
   const [sensitiveRevealed, setSensitiveRevealed] = useState(false);
   const blurred = isFlagged && !sensitiveRevealed;
@@ -66,23 +72,61 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
   const swipeStartX = useRef(0);
   const swipeActive = useRef(false);
 
+  // Helper to get consistent media key
+  const getMediaKey = useCallback((i) => {
+    const media = thread.media?.[i];
+    return media ? `${media._id}-${i}` : `idx-${i}`;
+  }, [thread.media]);
+
   const fetchSigned = useCallback(
     async (i) => {
-      if (signed[i] || loadingIdx[i]) return;
-      setLoadingIdx((s) => ({ ...s, [i]: true }));
-      try {
-        const res = await api.get(`/media/thread/${thread._id}/${i}`, token);
-        const url = res.data.data.url;
-        setSigned((s) => ({ ...s, [i]: url }));
-      } catch (e) {
-        console.error("Fetch signed failed", e);
-        setErrorIdx((s) => ({ ...s, [i]: true }));
-      } finally {
-        setLoadingIdx((s) => ({ ...s, [i]: false }));
-      }
+      const media = thread.media?.[i];
+      if (!media) return;
+      
+      const mediaKey = getMediaKey(i);
+      
+      setLoadingIdx((s) => {
+        if (s[mediaKey]) return s; // Already loading
+        return { ...s, [mediaKey]: true };
+      });
+
+      setSigned((s) => {
+        if (s[mediaKey]) {
+          setLoadingIdx(prev => ({ ...prev, [mediaKey]: false }));
+          return s; // Already have URL
+        }
+        
+        // Fetch URL
+        api.get(`/media/thread/${thread._id}/${i}`, token)
+          .then(res => {
+            const url = res.data.data.url;
+            setSigned(prev => ({ ...prev, [mediaKey]: url }));
+          })
+          .catch(e => {
+            console.error("Fetch signed failed", e);
+            setErrorIdx(prev => ({ ...prev, [mediaKey]: true }));
+          })
+          .finally(() => {
+            setLoadingIdx(prev => ({ ...prev, [mediaKey]: false }));
+          });
+        
+        return s;
+      });
     },
-    [signed, loadingIdx, thread._id, token]
+    [thread._id, thread.media, token]
   );
+
+  // Clear cache when media changes to prevent stale thumbnails
+  useEffect(() => {
+    // Create a signature of current media to detect changes
+    const mediaSignature = thread.media ? 
+      thread.media.map(m => m._id).join(',') + '|' + thread.media.length : '';
+    
+    // Clear signed URLs when media signature changes
+    setSigned({});
+    setLoadingIdx({});
+    setErrorIdx({});
+  }, [thread.media?.length, thread.media?.map?.(m => m._id).join?.(',')]);
 
   // Preload images immediately
   useEffect(() => {
@@ -91,7 +135,7 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
         if (m.type === "image") fetchSigned(i);
       });
     }
-  }, [thread.media, fetchSigned]);
+  }, [thread.media, thread._id, refreshKey]);
 
   // Auto-load video & audio when they enter viewport
   useEffect(() => {
@@ -101,11 +145,12 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
       typeof IntersectionObserver === "undefined"
     ) {
       thread.media.forEach((m, i) => {
+        const mediaKey = getMediaKey(i);
         if (
           (m.type === "video" || m.type === "audio") &&
-          !signed[i] &&
-          !loadingIdx[i] &&
-          !errorIdx[i]
+          !signed[mediaKey] &&
+          !loadingIdx[mediaKey] &&
+          !errorIdx[mediaKey]
         ) {
           fetchSigned(i);
         }
@@ -119,7 +164,8 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
             const idxAttr = entry.target.getAttribute("data-media-index");
             if (idxAttr != null) {
               const idx = Number(idxAttr);
-              if (!signed[idx] && !loadingIdx[idx] && !errorIdx[idx]) {
+              const mediaKey = getMediaKey(idx);
+              if (!signed[mediaKey] && !loadingIdx[mediaKey] && !errorIdx[mediaKey]) {
                 fetchSigned(idx);
               }
               observer.unobserve(entry.target);
@@ -131,14 +177,15 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
     );
 
     thread.media.forEach((m, i) => {
-      if ((m.type === "video" || m.type === "audio") && !signed[i]) {
+      const mediaKey = getMediaKey(i);
+      if ((m.type === "video" || m.type === "audio") && !signed[mediaKey]) {
         const el = mediaRefs.current[i];
         if (el) observer.observe(el);
       }
     });
 
     return () => observer.disconnect();
-  }, [thread.media, signed, loadingIdx, errorIdx, fetchSigned]);
+  }, [thread.media, signed, loadingIdx, errorIdx, fetchSigned, refreshKey]);
 
   const del = async () => {
     if (!confirm("Xóa bài này?")) return;
@@ -260,10 +307,11 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
         console.warn("❌ Position not found in mediaIndices");
         return;
       }
+      const mediaKey = getMediaKey(mediaIdxInMedia);
       if (
-        !signed[mediaIdxInMedia] &&
-        !loadingIdx[mediaIdxInMedia] &&
-        !errorIdx[mediaIdxInMedia]
+        !signed[mediaKey] &&
+        !loadingIdx[mediaKey] &&
+        !errorIdx[mediaKey]
       ) {
         console.log("🔄 Fetching signed URL for index:", mediaIdxInMedia);
         try {
@@ -274,7 +322,7 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
       } else {
         console.log(
           "✅ Signed URL already available:",
-          signed[mediaIdxInMedia]
+          signed[mediaKey]
         );
       }
       console.log("🎬 Opening lightbox at position:", pos);
@@ -388,10 +436,23 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
     (e) => {
       e.stopPropagation();
       if (thread.author?._id) {
-        navigate(`/profile/${thread.author._id}`);
+        // If clicking on own avatar/name, go to own profile, otherwise go to user profile
+        const isMyPost = thread.author._id === user?._id;
+        console.log('ThreadItem avatar click:', {
+          authorId: thread.author._id,
+          currentUserId: user?._id,
+          isMyPost: isMyPost,
+          navigateTo: isMyPost ? '/profile' : `/profile/${thread.author._id}`
+        });
+        
+        if (isMyPost) {
+          navigate('/profile');
+        } else {
+          navigate(`/profile/${thread.author._id}`);
+        }
       }
     },
-    [thread.author, navigate]
+    [thread.author, user, navigate]
   );
 
   const handleToggleLike = useCallback(async () => {
@@ -417,7 +478,7 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
         setReposted(false);
         setRepostsCount((c) => Math.max(0, c - 1));
       } else {
-        await threadApi.repostThread(thread._id, token);
+        await threadApi.repostThread(thread._id, null, token); // Pass null for comment, token as 3rd parameter
         setReposted(true);
         setRepostsCount((c) => c + 1);
       }
@@ -446,6 +507,47 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
     [isFollowing, thread.author, token, mine]
   );
 
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDropdown]);
+
+  // Handle edit post
+  const handleEdit = () => {
+    setIsEditing(true);
+    setShowDropdown(false);
+  };
+
+  const handleThreadUpdated = (updatedThread) => {
+    // Update the thread object with new data
+    Object.assign(thread, updatedThread);
+    
+    // Force re-render by updating refresh key and exiting edit mode
+    setRefreshKey(prev => prev + 1);
+    setIsEditing(false);
+    
+    // Clear any cached signed URLs so they'll be refetched for new media
+    setSigned({});
+    
+    // If there's a callback to notify parent components, call it
+    if (typeof onUpdated === 'function') {
+      onUpdated(updatedThread);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
   // Auto open comments when requested (e.g., from notification deep link)
   useEffect(() => {
     if (openComments) {
@@ -462,7 +564,12 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
   }, [openComments, thread._id]);
 
   return (
-    <div id={`thread-${thread._id}`} data-thread-id={thread._id} className="p-5 rounded-2xl space-y-3 border border-black/10 dark:border-white/10 bg-white dark:bg-black pop hover:shadow-md transition-shadow duration-200">
+    <div 
+      key={`thread-${thread._id}-${refreshKey}`}
+      id={`thread-${thread._id}`} 
+      data-thread-id={thread._id} 
+      className="p-5 rounded-2xl space-y-3 border border-black/10 dark:border-white/10 bg-white dark:bg-black pop hover:shadow-md transition-shadow duration-200"
+    >
       {/* Header */}
       <div className="flex items-center gap-3 text-sm">
         <div className="flex items-center gap-2">
@@ -499,12 +606,49 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
           {new Date(thread.createdAt).toLocaleString("vi-VN")}
         </span>
         {mine && (
-          <button
-            onClick={del}
-            className="ml-auto text-xs px-3 py-1 rounded-md transition-colors duration-150 text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/20"
-          >
-            Xóa
-          </button>
+          <div className="ml-auto relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-150 text-neutral-600 dark:text-neutral-400"
+              aria-label="Menu tùy chọn"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="12" cy="5" r="1"></circle>
+                <circle cx="12" cy="19" r="1"></circle>
+              </svg>
+            </button>
+            
+            {showDropdown && (
+              <div className="absolute right-0 top-8 mt-1 w-40 bg-white dark:bg-neutral-900 border border-black/10 dark:border-white/10 rounded-xl shadow-lg z-50">
+                <div className="py-1">
+                  <button
+                    onClick={handleEdit}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/5 text-neutral-700 dark:text-neutral-300 flex items-center gap-2"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="m18.5 2.5 a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Chỉnh sửa
+                  </button>
+                  <button
+                    onClick={() => {
+                      del();
+                      setShowDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center gap-2"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3,6 5,6 21,6"></polyline>
+                      <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"></path>
+                    </svg>
+                    Xóa
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -556,13 +700,21 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
       )}
 
       {/* Content */}
-      <div
-        className={`text-sm leading-relaxed whitespace-pre-wrap text-neutral-800 dark:text-neutral-200 ${
-          blurred ? "pointer-events-none select-none blur" : ""
-        }`}
-      >
-        {renderContentWithHashtags(thread.content)}
-      </div>
+      {isEditing ? (
+        <ThreadEditor
+          thread={thread}
+          onUpdated={handleThreadUpdated}
+          onCancel={handleCancelEdit}
+        />
+      ) : (
+        <div
+          className={`text-sm leading-relaxed whitespace-pre-wrap text-neutral-800 dark:text-neutral-200 ${
+            blurred ? "pointer-events-none select-none blur" : ""
+          }`}
+        >
+          {renderContentWithHashtags(thread.content)}
+        </div>
+      )}
 
       {/* Media Gallery */}
       {thread.media && thread.media.length > 0 && (
@@ -637,9 +789,10 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
               aria-label="Danh sách media cuộn ngang"
             >
               {sortedMedia.map(({ m, i }) => {
-                const url = signed[i];
-                const loading = loadingIdx[i];
-                const error = errorIdx[i];
+                const mediaKey = getMediaKey(i);
+                const url = signed[mediaKey];
+                const loading = loadingIdx[mediaKey];
+                const error = errorIdx[mediaKey];
 
                 if (m.type === "image") {
                   return (
@@ -1108,8 +1261,9 @@ export default function ThreadItem({ thread, onDelete, openComments = false }) {
             {(() => {
               const currentMediaIndex = mediaIndices[lightboxImgIdx];
               const mediaObj = thread.media?.[currentMediaIndex];
-              const url = signed[currentMediaIndex];
-              if (!url && errorIdx[currentMediaIndex]) {
+              const mediaKey = getMediaKey(currentMediaIndex);
+              const url = signed[mediaKey];
+              if (!url && errorIdx[mediaKey]) {
                 return (
                   <div className="text-white/90 text-sm bg-red-500/20 px-4 py-3 rounded-lg">
                     Không tải được media.

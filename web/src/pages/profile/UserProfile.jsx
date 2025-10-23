@@ -3,11 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { userApi, api, threadApi } from "../../utils/api.js";
 import { useAuth } from "../../state/auth.jsx";
 import ThreadItem from "../../ui/ThreadItem.jsx";
+import RepostItem from "../../ui/RepostItem.jsx";
 
 const TABS = [
-  { key: "threads", label: "Bài viết" },
+  { key: "threads", label: "Paw" },
   { key: "media", label: "File phương tiện" },
-  { key: "reposts", label: "Đăng lại" },
 ];
 
 export default function UserProfile() {
@@ -24,26 +24,41 @@ export default function UserProfile() {
   const [repostsLoaded, setRepostsLoaded] = useState(false);
 
   useEffect(() => {
+    // Reset states when userId changes
+    setUser(null);
+    setThreads([]);
+    setReposts([]);
+    setRepostsLoaded(false);
+    setIsFollowing(false);
+    
     fetchUserProfile();
   }, [userId]);
 
-  // Fetch reposts when reposts tab is active
+  // Load reposts along with threads
   useEffect(() => {
-    if (!token || !userId || activeTab !== "reposts" || repostsLoaded) return;
+    if (!token || !userId || repostsLoaded) return;
     (async () => {
       try {
+        console.log('Loading reposts for userId:', userId);
         const res = await threadApi.getReposts(userId, token);
-        setReposts(res.data.data || []);
+        const userReposts = (res.data.data || []).map(thread => ({
+          ...thread,
+          isRepost: true
+        }));
+        console.log('Loaded reposts:', userReposts.length);
+        setReposts(userReposts);
         setRepostsLoaded(true);
       } catch (e) {
         console.error("Failed to fetch reposts:", e);
       }
     })();
-  }, [token, userId, activeTab, repostsLoaded]);
+  }, [token, userId, repostsLoaded]);
 
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
+      console.log('Fetching profile for userId:', userId);
+      
       const response = await userApi.getUserById(userId, token);
       const userData = response.data.data;
       setUser(userData);
@@ -53,13 +68,21 @@ export default function UserProfile() {
         setIsFollowing(currentUser.following.includes(userId));
       }
 
-      // Fetch threads of this user
-      const threadsResponse = await api.get("/threads", token);
-      const allThreads = threadsResponse.data.data || [];
-      // Filter threads by this user
-      const userThreads = allThreads.filter(
-        (t) => t.author && t.author._id === userId
-      );
+      // Fetch threads of this user using author filter
+      const threadsResponse = await api.get(`/threads?author=${userId}`, token);
+      const userThreads = threadsResponse.data.data || [];
+      
+      console.log('UserProfile threads loaded:', {
+        userId: userId,
+        threadsCount: userThreads.length,
+        sample: userThreads.slice(0, 2).map(t => ({
+          id: t._id,
+          authorId: t.author?._id,
+          content: t.content?.slice(0, 30),
+          isRepost: t.isRepost
+        }))
+      });
+      
       setThreads(userThreads);
     } catch (error) {
       console.error("Error fetching user profile:", error);
@@ -231,20 +254,22 @@ export default function UserProfile() {
       </div>
 
       {/* Tabs */}
-  <div className="border-b border-black/10 dark:border-white/10 flex gap-8 px-2 text-sm">
+      <div className="border-b border-black/10 dark:border-white/10 grid grid-cols-2 px-2">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`py-3 relative ${
+            className={`px-2 py-3.5 relative font-bold text-sm flex items-center justify-center gap-1 rounded-t-xl transition-all duration-200 ${
               activeTab === t.key
-                ? "text-white"
-                : "text-neutral-500 hover:text-neutral-300"
+                ? "text-black dark:text-white bg-black/5 dark:bg-white/5"
+                : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5"
             }`}
           >
+            {t.key === "threads" && "📝"}
+            {t.key === "media" && "📁"}
             {t.label}
-              {activeTab === t.key && (
-              <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-black dark:bg-white rounded-full" />
+            {activeTab === t.key && (
+              <span className="absolute left-0 right-0 -bottom-px h-1 bg-black dark:bg-white rounded-t" />
             )}
           </button>
         ))}
@@ -253,13 +278,73 @@ export default function UserProfile() {
       {/* Tab Content */}
       <div className="space-y-4">
         {activeTab === "threads" &&
-          (threads.length ? (
-            threads.map((t) => <ThreadItem key={t._id} thread={t} />)
-          ) : (
-            <div className="text-sm text-neutral-500 text-center py-8">
-              Chưa có bài viết
-            </div>
-          ))}
+          (() => {
+            // Combine threads and reposts, then sort by date
+            const combined = [
+              ...threads.map(t => ({ ...t, isRepost: false })),
+              ...reposts
+            ];
+            
+            // Remove duplicates based on _id
+            const seenIds = new Set();
+            const deduplicated = combined.filter(item => {
+              if (seenIds.has(item._id)) {
+                return false; // Skip duplicate
+              }
+              seenIds.add(item._id);
+              return true;
+            });
+            
+            console.log('UserProfile combined data:', {
+              threads: threads.length,
+              reposts: reposts.length,
+              combined: combined.length,
+              deduplicated: deduplicated.length,
+              duplicatesRemoved: combined.length - deduplicated.length
+            });
+            
+            const sorted = deduplicated.sort((a, b) => {
+              const dateA = a.createdAt;
+              const dateB = b.createdAt;
+              return new Date(dateB) - new Date(dateA);
+            });
+            
+            return sorted.length ? (
+              sorted.map((t) => (
+                t.isRepost ? (
+                  <RepostItem 
+                    key={`repost_${t._id}`} 
+                    repost={t}
+                    onDelete={(repostId) => {
+                      console.log('UserProfile: Deleting repost with ID:', repostId);
+                      setReposts(prev => {
+                        const newReposts = prev.filter(r => {
+                          // Check against the actual MongoDB repost ID or formatted ID
+                          if (r.repostId && (r.repostId === repostId || repostId.includes(r.repostId))) {
+                            console.log('Removing repost from UserProfile:', r.repostId);
+                            return false;
+                          }
+                          if (r._id === repostId) {
+                            console.log('Removing repost from UserProfile by _id:', r._id);
+                            return false;
+                          }
+                          return true;
+                        });
+                        console.log('UserProfile reposts after deletion:', newReposts.length);
+                        return newReposts;
+                      });
+                    }}
+                  />
+                ) : (
+                  <ThreadItem key={`thread_${t._id}`} thread={t} />
+                )
+              ))
+            ) : (
+              <div className="text-sm text-neutral-500 text-center py-8">
+                Chưa có bài viết
+              </div>
+            );
+          })()}
 
         {activeTab === "media" &&
           (mediaThreads.length ? (
@@ -267,37 +352,6 @@ export default function UserProfile() {
           ) : (
             <div className="text-sm text-neutral-500 text-center py-8">
               Không có file phương tiện
-            </div>
-          ))}
-
-        {activeTab === "reposts" &&
-          (reposts.length ? (
-            reposts.map((t) => (
-              <div key={t._id} className="space-y-2">
-                <div className="text-xs text-neutral-400 flex items-center gap-2">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="17 1 21 5 17 9"></polyline>
-                    <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                    <polyline points="7 23 3 19 7 15"></polyline>
-                    <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-                  </svg>
-                  <span>{user.username} đã đăng lại</span>
-                </div>
-                <ThreadItem thread={t} />
-              </div>
-            ))
-          ) : (
-            <div className="text-sm text-neutral-500 text-center py-8">
-              Chưa có bài đăng lại
             </div>
           ))}
       </div>

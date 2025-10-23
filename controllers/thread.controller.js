@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import { Thread } from "../models/thread.model.js";
 import { User } from "../models/user.model.js";
+import { Repost } from "../models/repost.model.js";
 import {
   uploadBuffer,
   deleteMediaKeys,
@@ -226,6 +227,18 @@ export const createThread = asyncHandler(async (req, res) => {
         })
       );
     }
+    
+    // Emit WebSocket event for real-time updates
+    if (req.io) {
+      req.io.emit('thread:created', {
+        thread: sanitized,
+        author: sanitized.author,
+        hashtags: hashtags,
+        timestamp: new Date().toISOString()
+      });
+      console.log('🔥 Emitted thread:created event for hashtag trending update');
+    }
+    
     res.status(201).json({ success: true, data: sanitized });
   } catch (e) {
     console.error("Create thread validation error", e.message);
@@ -240,20 +253,98 @@ export const createThread = asyncHandler(async (req, res) => {
 });
 
 export const listThreads = asyncHandler(async (req, res) => {
+  const currentUserId = req.user._id;
+  
   // Support filtering by author userId via query param ?author=userId
   const filter = { status: { $ne: "REJECTED" } };
   if (req.query.author) {
     filter.author = req.query.author;
   }
 
+  // Get current user's network (followers, following, friends)
+  const currentUser = await User.findById(currentUserId).lean();
+  const networkIds = [
+    ...currentUser.followers,
+    ...currentUser.following, 
+    ...currentUser.friends,
+    currentUserId // include own posts
+  ];
+  
+  console.log('Current User ID:', currentUserId);
+  console.log('Network IDs:', networkIds);
+  console.log('Following:', currentUser.following);
+  console.log('Followers:', currentUser.followers);
+
+  // Get regular threads
   const threads = await Thread.find(filter)
     .sort({ createdAt: -1 })
     .limit(200)
     .populate("author", "username isPro badges avatarKey");
 
+  // Get reposts from user's network using Repost model
+  // Skip reposts if filtering by specific author (profile view)
+  let reposts = [];
+  if (!req.query.author) {
+    console.log('Searching for reposts from network users:', networkIds);
+    reposts = await Repost.find({
+      user: { $in: networkIds }
+    })
+      .populate({
+        path: "thread",
+        populate: { 
+          path: "author", 
+          select: "username isPro badges avatarKey" 
+        },
+        match: { status: { $ne: "REJECTED" } }
+      })
+      .populate("user", "username isPro badges avatarKey")
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+    console.log('Found reposts:', reposts.length);
+    console.log('Repost details:', reposts.map(r => ({
+      id: r._id,
+      user: r.user?.username,
+      threadAuthor: r.thread?.author?.username,
+      threadId: r.thread?._id
+    })));
+  } else {
+    console.log('Skipping reposts - filtering by author:', req.query.author);
+  }
+
+  // Transform reposts to include thread data with repost info
+  const repostItems = reposts
+    .filter(repost => repost.thread) // Filter out reposts of deleted threads
+    .map(repost => ({
+      ...repost.thread,
+      isRepost: true,
+      repostedBy: repost.user,
+      repostedAt: repost.createdAt,
+      repostComment: repost.comment,
+      repostId: repost._id
+    }));
+
+  // Combine and sort all content by creation/repost time
+  const allContent = [
+    ...threads.map(t => ({ ...t.toObject(), isRepost: false })),
+    ...repostItems
+  ].sort((a, b) => {
+    const dateA = a.isRepost ? a.repostedAt : a.createdAt;
+    const dateB = b.isRepost ? b.repostedAt : b.createdAt;
+    return new Date(dateB) - new Date(dateA);
+  }).slice(0, 200);
+
+  console.log('Final content count:', allContent.length);
+  console.log('Content breakdown:', {
+    threads: allContent.filter(c => !c.isRepost).length,
+    reposts: allContent.filter(c => c.isRepost).length
+  });
+
   const withAvatars = await Promise.all(
-    threads.map(async (t) => {
-      const obj = t.toObject();
+    allContent.map(async (item) => {
+      const obj = { ...item };
+      
+      // Handle original author avatar
       if (obj.author?.avatarKey) {
         try {
           obj.author.avatarUrl = await getSignedMediaUrl(
@@ -264,6 +355,19 @@ export const listThreads = asyncHandler(async (req, res) => {
           obj.author.avatarUrl = null;
         }
       }
+      
+      // Handle reposter avatar
+      if (obj.isRepost && obj.repostedBy?.avatarKey) {
+        try {
+          obj.repostedBy.avatarUrl = await getSignedMediaUrl(
+            obj.repostedBy.avatarKey,
+            900
+          );
+        } catch {
+          obj.repostedBy.avatarUrl = null;
+        }
+      }
+      
       return obj;
     })
   );
@@ -272,17 +376,38 @@ export const listThreads = asyncHandler(async (req, res) => {
 });
 
 export const deleteThread = asyncHandler(async (req, res) => {
-  const t = await Thread.findById(req.params.id);
+  const t = await Thread.findById(req.params.id).populate("author", "username isPro badges");
   if (!t) return res.status(404).json({ success: false, message: "Not found" });
   if (String(t.author) !== String(req.user._id))
     return res.status(403).json({ success: false, message: "Forbidden" });
+  
+  // Store data for WebSocket event before deletion
+  const threadData = {
+    _id: t._id,
+    hashtags: t.hashtags || [],
+    author: t.author,
+    content: t.content
+  };
+  
   const keys = (t.media || []).map((m) => m.key).filter(Boolean);
   await t.deleteOne();
+  
   if (keys.length) {
     deleteMediaKeys(keys).catch((e) =>
       console.error("Delete media keys failed", e)
     );
   }
+  
+  // Emit WebSocket event for real-time updates
+  if (req.io) {
+    req.io.emit('thread:deleted', {
+      thread: threadData,
+      hashtags: threadData.hashtags,
+      timestamp: new Date().toISOString()
+    });
+    console.log('🗑️ Emitted thread:deleted event for hashtag trending update');
+  }
+  
   res.json({ success: true, message: "Deleted" });
 });
 
@@ -520,21 +645,244 @@ export const updateThread = asyncHandler(async (req, res) => {
   if (!t) return res.status(404).json({ success: false, message: "Not found" });
   if (String(t.author) !== String(req.user._id))
     return res.status(403).json({ success: false, message: "Forbidden" });
-  const rawContent =
-    typeof req.body.content === "string" ? req.body.content : "";
+
+  const rawContent = typeof req.body.content === "string" ? req.body.content : "";
   const content = rawContent.trim();
-  if (!content && (!t.media || t.media.length === 0))
-    return res
-      .status(400)
-      .json({ success: false, message: "Content or media required" });
-  if (content.length > 500)
-    return res
-      .status(400)
-      .json({ success: false, message: "Content too long" });
-  t.content = content;
-  t.tags = extractTags(content);
-  await t.save();
-  res.json({ success: true, data: t });
+  const files = req.files || [];
+  const removedMediaIds = Array.isArray(req.body.removedMedia) 
+    ? req.body.removedMedia 
+    : (req.body.removedMedia ? [req.body.removedMedia] : []);
+
+  // Handle removed media
+  let keysToDelete = [];
+  let updatedMedia = [...(t.media || [])];
+  
+  if (Array.isArray(removedMediaIds) && removedMediaIds.length > 0) {
+    // Remove specified media items
+    updatedMedia = updatedMedia.filter(m => {
+      if (removedMediaIds.includes(String(m._id))) {
+        if (m.key) keysToDelete.push(m.key);
+        return false;
+      }
+      return true;
+    });
+  }
+
+  // Validation for new files
+  if (files.length > 0) {
+    const currentMediaCount = updatedMedia.length;
+    if (currentMediaCount + files.length > MAX_FILES) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Total media cannot exceed ${MAX_FILES} files` 
+      });
+    }
+
+    const totalSize = files.reduce((a, f) => a + f.size, 0);
+    if (totalSize > MAX_TOTAL) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Total media too large" 
+      });
+    }
+
+    for (const f of files) {
+      if (f.size > MAX_FILE_SIZE) {
+        return res.status(400).json({
+          success: false,
+          message: `${f.originalname} exceeds per-file size limit`,
+        });
+      }
+      if (!ALLOWED_PREFIX.some((p) => f.mimetype.startsWith(p))) {
+        return res.status(400).json({
+          success: false,
+          message: `${f.originalname} unsupported type`,
+        });
+      }
+    }
+  }
+
+  // Validate final content requirement
+  if (!content && updatedMedia.length === 0 && files.length === 0) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Content or media required" 
+    });
+  }
+  
+  if (content.length > 500) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Content too long" 
+    });
+  }
+
+  // Upload new files
+  let newMedia = [];
+  if (files.length > 0) {
+    const concurrency = 3;
+    const queue = [...files];
+    const uploaded = [];
+    let failed = false;
+
+    async function worker() {
+      while (queue.length && !failed) {
+        const file = queue.shift();
+        try {
+          const { buffer, mimetype, originalname, size } = file;
+          const ext = originalname.includes(".") 
+            ? originalname.split(".").pop() 
+            : undefined;
+          const result = await uploadBuffer({
+            buffer,
+            mimeType: mimetype,
+            ext,
+            userId: req.user._id,
+          });
+          uploaded.push({
+            key: result.key,
+            type: detectType(mimetype),
+            mimeType: mimetype,
+            size,
+          });
+        } catch (e) {
+          console.error("Upload failed", e);
+          failed = true;
+        }
+      }
+    }
+
+    const workers = Array.from(
+      { length: Math.min(concurrency, files.length) },
+      () => worker()
+    );
+    await Promise.all(workers);
+
+    if (failed) {
+      // Rollback uploaded files
+      await deleteMediaKeys(uploaded.map((u) => u.key));
+      return res.status(500).json({ 
+        success: false, 
+        message: "Media upload failed" 
+      });
+    }
+
+    // Auto moderation for new images
+    const imageKeys = uploaded.filter((m) => m.type === "image").map((m) => m.key);
+    if (imageKeys.length > 0) {
+      try {
+        const imageUrls = await Promise.all(
+          imageKeys.slice(0, 6).map(async (key) => {
+            try {
+              return await getSignedMediaUrl(key, 600);
+            } catch {
+              return null;
+            }
+          })
+        );
+        
+        const mod = await moderation.moderateContent({
+          text: content,
+          imageKeys,
+          imageUrls: imageUrls.filter(Boolean),
+        });
+
+        // Map moderation results to uploaded media
+        const perImage = (mod?.images?.images || []).filter(
+          (r) => r.source === "ai" || r.source === "rekognition"
+        );
+        let imageCursor = 0;
+        newMedia = uploaded.map((m) => {
+          if (m.type !== "image") return m;
+          const imgRes = perImage[imageCursor++] || null;
+          if (!imgRes) return m;
+          return {
+            ...m,
+            moderation: {
+              score: Number(imgRes.score) || 0,
+              decision: imgRes.decision || "APPROVE",
+              categories: Array.isArray(imgRes.categories) ? imgRes.categories : [],
+            },
+          };
+        });
+      } catch (e) {
+        console.warn("Moderation failed for update", e);
+        newMedia = uploaded;
+      }
+    } else {
+      newMedia = uploaded;
+    }
+  }
+
+  try {
+    // Update thread properties
+    t.content = content;
+    t.tags = extractTags(content);
+    t.hashtags = extractTags(content); // Update hashtags as well
+    t.media = [...updatedMedia, ...newMedia];
+    
+    await t.save();
+
+    // Delete old media files after successful update
+    if (keysToDelete.length > 0) {
+      deleteMediaKeys(keysToDelete).catch((e) =>
+        console.error("Delete old media keys failed", e)
+      );
+    }
+
+    // Populate and format response
+    await t.populate("author", "username isPro badges avatarKey");
+    const sanitized = t.toObject();
+    
+    if (sanitized.author?.avatarKey) {
+      try {
+        sanitized.author.avatarUrl = await getSignedMediaUrl(
+          sanitized.author.avatarKey,
+          900
+        );
+      } catch {
+        sanitized.author.avatarUrl = null;
+      }
+    }
+
+    if (sanitized.media) {
+      sanitized.media = sanitized.media.map(
+        ({ key, type, mimeType, size, _id, moderation }) => ({
+          _id,
+          key,
+          type,
+          mimeType,
+          size,
+          moderation,
+        })
+      );
+    }
+
+    // Emit WebSocket event for real-time updates
+    if (req.io) {
+      req.io.emit('thread:updated', {
+        thread: sanitized,
+        author: sanitized.author,
+        hashtags: sanitized.hashtags,
+        timestamp: new Date().toISOString()
+      });
+      console.log('📝 Emitted thread:updated event for hashtag trending update');
+    }
+
+    res.json({ success: true, data: sanitized });
+  } catch (e) {
+    console.error("Update thread validation error", e.message);
+    
+    // Rollback new uploaded media if DB update fails
+    if (newMedia.length > 0) {
+      deleteMediaKeys(newMedia.map((m) => m.key)).catch(() => {});
+    }
+    
+    return res.status(400).json({ 
+      success: false, 
+      message: e.message || "Invalid thread update" 
+    });
+  }
 });
 
 export const listByTag = asyncHandler(async (req, res) => {
@@ -635,6 +983,7 @@ export const unlikeThread = asyncHandler(async (req, res) => {
 export const repostThread = asyncHandler(async (req, res) => {
   const threadId = req.params.id;
   const userId = req.user._id;
+  const { comment } = req.body; // Optional comment when reposting
 
   const thread = await Thread.findById(threadId);
   if (!thread)
@@ -642,14 +991,28 @@ export const repostThread = asyncHandler(async (req, res) => {
       .status(404)
       .json({ success: false, message: "Thread not found" });
 
-  // Check if already reposted
-  if (thread.reposts.includes(userId)) {
+  // Check if already reposted using Repost model
+  const existingRepost = await Repost.findOne({ 
+    user: userId, 
+    thread: threadId 
+  });
+  
+  if (existingRepost) {
     return res
       .status(400)
       .json({ success: false, message: "Already reposted" });
   }
 
-  // Add to thread reposts and user repostedThreads atomically
+  // Create repost record
+  const repost = new Repost({
+    user: userId,
+    thread: threadId,
+    comment: comment?.trim() || null
+  });
+  
+  await repost.save();
+
+  // Update thread reposts array and user repostedThreads for compatibility
   await Promise.all([
     Thread.updateOne({ _id: threadId }, { $addToSet: { reposts: userId } }),
     User.updateOne(
@@ -674,7 +1037,15 @@ export const repostThread = asyncHandler(async (req, res) => {
     console.warn("Thread repost notification failed:", e?.message || e);
   }
 
-  res.json({ success: true, message: "Thread reposted" });
+  res.json({ 
+    success: true, 
+    message: "Thread reposted",
+    repost: {
+      _id: repost._id,
+      createdAt: repost.createdAt,
+      comment: repost.comment
+    }
+  });
 });
 
 // Unrepost a thread
@@ -688,7 +1059,10 @@ export const unrepostThread = asyncHandler(async (req, res) => {
       .status(404)
       .json({ success: false, message: "Thread not found" });
 
-  // Remove from thread reposts and user repostedThreads atomically
+  // Remove repost record
+  await Repost.deleteOne({ user: userId, thread: threadId });
+
+  // Remove from thread reposts and user repostedThreads arrays for compatibility
   await Promise.all([
     Thread.updateOne({ _id: threadId }, { $pull: { reposts: userId } }),
     User.updateOne({ _id: userId }, { $pull: { repostedThreads: threadId } }),
@@ -734,18 +1108,34 @@ export const getFavorites = asyncHandler(async (req, res) => {
 export const getReposts = asyncHandler(async (req, res) => {
   const userId = req.params.userId || req.user._id;
 
-  const user = await User.findById(userId).populate({
-    path: "repostedThreads",
-    populate: { path: "author", select: "username isPro badges avatarKey" },
-    options: { sort: { createdAt: -1 } },
-  });
+  // Get reposts with full thread and user data
+  const reposts = await Repost.find({ user: userId })
+    .populate({
+      path: "thread",
+      populate: { path: "author", select: "username isPro badges avatarKey" },
+      match: { status: { $ne: "REJECTED" } }
+    })
+    .populate("user", "username isPro badges avatarKey")
+    .sort({ createdAt: -1 })
+    .lean();
 
-  if (!user)
-    return res.status(404).json({ success: false, message: "User not found" });
+  // Transform to include repost metadata with thread data
+  const repostData = reposts
+    .filter(repost => repost.thread) // Filter out reposts of deleted threads
+    .map(repost => ({
+      ...repost.thread,
+      isRepost: true,
+      repostedBy: repost.user,
+      repostedAt: repost.createdAt,
+      repostComment: repost.comment,
+      repostId: repost._id
+    }));
 
   const withAvatars = await Promise.all(
-    (user.repostedThreads || []).map(async (t) => {
-      const obj = t.toObject();
+    repostData.map(async (item) => {
+      const obj = { ...item };
+      
+      // Handle original author avatar
       if (obj.author?.avatarKey) {
         try {
           obj.author.avatarUrl = await getSignedMediaUrl(
@@ -756,6 +1146,19 @@ export const getReposts = asyncHandler(async (req, res) => {
           obj.author.avatarUrl = null;
         }
       }
+      
+      // Handle reposter avatar
+      if (obj.repostedBy?.avatarKey) {
+        try {
+          obj.repostedBy.avatarUrl = await getSignedMediaUrl(
+            obj.repostedBy.avatarKey,
+            900
+          );
+        } catch {
+          obj.repostedBy.avatarUrl = null;
+        }
+      }
+      
       return obj;
     })
   );

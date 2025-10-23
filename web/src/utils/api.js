@@ -208,8 +208,9 @@ export const threadApi = {
   },
 
   // Repost a thread
-  repostThread: (threadId, token) => {
-    return request(`/threads/${threadId}/repost`, "POST", undefined, token);
+  repostThread: (threadId, comment, token) => {
+    const data = comment ? { comment } : undefined;
+    return request(`/threads/${threadId}/repost`, "POST", data, token);
   },
 
   // Unrepost a thread

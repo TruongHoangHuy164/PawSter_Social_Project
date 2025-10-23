@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "../../state/auth.jsx";
 import { api, threadApi } from "../../utils/api.js";
 import ThreadItem from "../../ui/ThreadItem.jsx";
+import RepostItem from "../../ui/RepostItem.jsx";
 
 /* UI-ONLY profile redesign: cover image (local), avatar (local), bio, website, tabs. */
 
@@ -9,7 +10,7 @@ const TABS = [
   { key: "threads", label: "Paw" },
   { key: "replies", label: "Paw trả lời" },
   { key: "media", label: "File phương tiện" },
-  { key: "reposts", label: "Paw đăng lại" },
+  { key: "favorites", label: "Paw yêu thích" },
 ];
 
 export default function Profile() {
@@ -29,9 +30,11 @@ export default function Profile() {
   const [threads, setThreads] = useState([]);
   const [reposts, setReposts] = useState([]);
   const [comments, setComments] = useState([]);
+  const [favorites, setFavorites] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [repostsLoaded, setRepostsLoaded] = useState(false);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
 
 
@@ -46,34 +49,89 @@ export default function Profile() {
     }
   }, [user?.proExpiry]);
 
-  // Fetch threads once (simple load) for demonstration
+  // Fetch threads and reposts for the Paw tab
   React.useEffect(() => {
     if (!token || !user || loaded) return;
     (async () => {
       try {
-        // Fetch only threads authored by this user
-        const res = await api.get(`/threads?author=${user._id}`, token);
-        setThreads(res.data.data || []);
+        // Fetch both threads and reposts
+        const [threadsRes, repostsRes] = await Promise.all([
+          api.get(`/threads?author=${user._id}`, token),
+          threadApi.getReposts(user._id, token)
+        ]);
+        
+        // Keep threads as original threads only - filter to ensure only user's threads
+        const userThreads = (threadsRes.data.data || []).filter(thread => 
+          thread.author && thread.author._id === user._id
+        );
+        
+        console.log('Profile threads loaded:', {
+          total: threadsRes.data.data?.length || 0,
+          filtered: userThreads.length,
+          userId: user._id,
+          sample: userThreads.slice(0, 2).map(t => ({
+            id: t._id,
+            authorId: t.author?._id,
+            content: t.content?.slice(0, 30)
+          }))
+        });
+        
+        setThreads(userThreads);
+        
+        // Keep reposts separate with isRepost flag for display
+        const userReposts = (repostsRes.data.data || [])
+          .filter(thread => {
+            // Only include if this is actually a repost (has repostedBy or repostedAt)
+            return thread.repostedBy || thread.repostedAt || thread.isRepost;
+          })
+          .map(thread => ({
+            ...thread,
+            isRepost: true
+          }));
+        
+        console.log('Profile reposts loaded:', {
+          total: repostsRes.data.data?.length || 0,
+          filtered: userReposts.length,
+          sample: userReposts.slice(0, 2).map(r => ({
+            id: r._id,
+            repostedBy: r.repostedBy?.username,
+            repostedAt: r.repostedAt,
+            hasIsRepost: r.isRepost
+          }))
+        });
+        
+        // Also check localStorage for any local reposts
+        const localStorageReposts = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(`repost_repost_${user._id}_`)) {
+            try {
+              const repostData = JSON.parse(localStorage.getItem(key) || '{}');
+              if (repostData.repostTimestamp) {
+                // Find the original thread - this could be any thread, not just user's threads
+                const originalThreadId = key.replace(`repost_repost_${user._id}_`, '');
+                // We need to fetch this thread separately since it might not be user's thread
+                // For now, skip localStorage reposts in profile view to avoid showing others' threads
+                console.log('Skipping localStorage repost to avoid showing others threads:', originalThreadId);
+              }
+            } catch (e) {
+              console.error('Error parsing localStorage repost:', e);
+            }
+          }
+        }
+        
+        console.log('LocalStorage reposts found:', localStorageReposts.length);
+        
+        // Only use backend reposts for now (localStorage reposts might reference others' threads)
+        setReposts(userReposts);
+        
         setLoaded(true);
+        setRepostsLoaded(true);
       } catch (e) {
         console.error(e);
       }
     })();
   }, [token, user, loaded]);
-
-  // Fetch reposts when reposts tab is active
-  React.useEffect(() => {
-    if (!token || !user || activeTab !== "reposts" || repostsLoaded) return;
-    (async () => {
-      try {
-        const res = await threadApi.getReposts(user._id, token);
-        setReposts(res.data.data || []);
-        setRepostsLoaded(true);
-      } catch (e) {
-        console.error("Failed to fetch reposts:", e);
-      }
-    })();
-  }, [token, user, activeTab, repostsLoaded]);
 
   // Fetch comments when replies tab is active
   React.useEffect(() => {
@@ -88,6 +146,20 @@ export default function Profile() {
       }
     })();
   }, [token, user, activeTab, commentsLoaded]);
+
+  // Fetch favorites when favorites tab is active
+  React.useEffect(() => {
+    if (!token || !user || activeTab !== "favorites" || favoritesLoaded) return;
+    (async () => {
+      try {
+        const res = await threadApi.getFavorites(user._id, token);
+        setFavorites(res.data.data || []);
+        setFavoritesLoaded(true);
+      } catch (e) {
+        console.error("Failed to fetch favorites:", e);
+      }
+    })();
+  }, [token, user, activeTab, favoritesLoaded]);
 
   const mediaThreads = useMemo(
     () => threads.filter((t) => t.media && t.media.length > 0),
@@ -289,9 +361,22 @@ export default function Profile() {
               type="button"
               onClick={() => setShowEdit((v) => !v)}
               title="Chỉnh sửa hồ sơ"
-              className="ml-1 px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 text-sm font-bold bg-white/50 dark:bg-black/50 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+              className="ml-1 px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 text-sm font-bold bg-white/50 dark:bg-black/50 hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center justify-center"
             >
-              . . .
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
             </button>
           </div>
           <div className="text-neutral-500 text-sm font-medium">
@@ -449,26 +534,60 @@ export default function Profile() {
           </div>
         </div>
         <div className="flex items-center justify-between pt-4">
-          <button
-            disabled={saving}
-            onClick={saveProfile}
-            className="px-8 py-3.5 rounded-xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 text-sm font-bold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-2"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div className="flex items-center gap-3">
+            <button
+              disabled={saving}
+              onClick={saveProfile}
+              className="px-8 py-3.5 rounded-xl bg-black dark:bg-white text-white dark:text-black disabled:opacity-50 text-sm font-bold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-2"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            {saving ? "Đang lưu..." : "Lưu thay đổi"}
-          </button>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              {saving ? "Đang lưu..." : "Lưu thay đổi"}
+            </button>
+            <button
+              disabled={saving}
+              onClick={() => {
+                // Reset form to original values
+                setUsername(user?.username || "");
+                setBio(user?.bio || "");
+                setWebsite(user?.website || "");
+                setCover(null);
+                setAvatar(null);
+                setShowEdit(false);
+                setMsg("");
+                // Clear file inputs
+                if (avatarFileRef.current) avatarFileRef.current.value = "";
+                if (coverFileRef.current) coverFileRef.current.value = "";
+              }}
+              className="px-6 py-3.5 rounded-xl bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 disabled:opacity-50 text-sm font-bold hover:bg-neutral-300 dark:hover:bg-neutral-700 transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-2"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              Huỷ
+            </button>
+          </div>
           {msg && (
             <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
               <svg
@@ -493,12 +612,12 @@ export default function Profile() {
       </div>
       )}
       {/* TABS */}
-      <div className="border-b border-black/10 dark:border-white/10 flex gap-2 px-2">
+      <div className="border-b border-black/10 dark:border-white/10 grid grid-cols-4 px-2">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`px-6 py-3.5 relative font-bold text-sm flex items-center gap-2 rounded-t-xl transition-all duration-200 ${
+            className={`px-2 py-3.5 relative font-bold text-sm flex items-center justify-center gap-1 rounded-t-xl transition-all duration-200 ${
               activeTab === t.key
                 ? "text-black dark:text-white bg-black/5 dark:bg-white/5"
                 : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:bg-black/5 dark:hover:bg-white/5"
@@ -508,6 +627,7 @@ export default function Profile() {
             {t.key === "replies" && "💬"}
             {t.key === "media" && "📁"}
             {t.key === "reposts" && "🔄"}
+            {t.key === "favorites" && "⭐"}
             {t.label}
             {activeTab === t.key && (
               <span className="absolute left-0 right-0 -bottom-px h-1 bg-black dark:bg-white rounded-t" />
@@ -518,21 +638,86 @@ export default function Profile() {
       {/* TAB CONTENT */}
       <div className="space-y-4">
         {activeTab === "threads" &&
-          (threads.length ? (
-            threads.map((t) => <ThreadItem key={t._id} thread={t} />)
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 px-4">
-              <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-4">
-                <span className="text-4xl">📝</span>
+          (() => {
+            // Combine threads and reposts, then sort by date
+            // threads = user's own threads only
+            // reposts = threads that user reposted (can be from anyone)
+            const combined = [
+              // User's own threads
+              ...threads.map(t => ({ ...t, isRepost: false })),
+              // User's reposts (of others' threads)
+              ...reposts.map(r => {
+                // Get repost timestamp from localStorage
+                const repostId = `repost_${user._id}_${r._id}`;
+                const repostData = JSON.parse(localStorage.getItem(`repost_${repostId}`) || '{}');
+                const repostTimestamp = repostData.repostTimestamp || r.repostedAt || new Date().toISOString();
+                return {
+                  ...r,
+                  isRepost: true, // Ensure isRepost is true for reposts
+                  sortDate: repostTimestamp // Use repost time for sorting
+                };
+              })
+            ].sort((a, b) => {
+              const dateA = a.sortDate || a.createdAt;
+              const dateB = b.sortDate || b.createdAt;
+              return new Date(dateB) - new Date(dateA);
+            });
+            
+            console.log('Profile combined data:', {
+              totalCombined: combined.length,
+              threads: threads.length,
+              reposts: reposts.length,
+              combinedSample: combined.slice(0, 3).map(t => ({ 
+                id: t._id, 
+                isRepost: t.isRepost, 
+                title: t.content?.slice(0, 50) 
+              }))
+            });
+            
+            return combined.length ? (
+              combined.map((t) => (
+                t.isRepost ? (
+                  <RepostItem 
+                    key={`repost_${t.repostId || t._id}`} 
+                    repost={t}
+                    onDelete={(repostId) => {
+                      console.log('Profile: Deleting repost with ID:', repostId);
+                      setReposts(prev => {
+                        const newReposts = prev.filter(r => {
+                          // Check against the actual MongoDB repost ID or formatted ID
+                          if (r.repostId && (r.repostId === repostId || repostId.includes(r.repostId))) {
+                            console.log('Removing repost from Profile:', r.repostId);
+                            return false;
+                          }
+                          if (r._id === repostId) {
+                            console.log('Removing repost from Profile by _id:', r._id);
+                            return false;
+                          }
+                          return true;
+                        });
+                        console.log('Profile reposts after deletion:', newReposts.length);
+                        return newReposts;
+                      });
+                    }}
+                  />
+                ) : (
+                  <ThreadItem key={`thread_${t._id}`} thread={t} />
+                )
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 px-4">
+                <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-4">
+                  <span className="text-4xl">📝</span>
+                </div>
+                <div className="text-base text-neutral-600 dark:text-neutral-400 font-bold">
+                  Chưa có thread
+                </div>
+                <div className="text-sm text-neutral-500 dark:text-neutral-500 font-medium mt-1">
+                  Hãy chia sẻ suy nghĩ của bạn
+                </div>
               </div>
-              <div className="text-base text-neutral-600 dark:text-neutral-400 font-bold">
-                Chưa có thread
-              </div>
-              <div className="text-sm text-neutral-500 dark:text-neutral-500 font-medium mt-1">
-                Hãy chia sẻ suy nghĩ của bạn
-              </div>
-            </div>
-          ))}
+            );
+          })()}
         {activeTab === "media" &&
           (mediaThreads.length ? (
             mediaThreads.map((t) => <ThreadItem key={t._id} thread={t} />)
@@ -709,41 +894,46 @@ export default function Profile() {
               </div>
             </div>
           ))}
-        {activeTab === "reposts" &&
-          (reposts.length ? (
-            reposts.map((t) => (
-              <div key={t._id} className="space-y-3">
-                <div className="text-xs text-neutral-600 dark:text-neutral-400 flex items-center gap-2 font-bold px-2">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="17 1 21 5 17 9"></polyline>
-                    <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                    <polyline points="7 23 3 19 7 15"></polyline>
-                    <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-                  </svg>
-                  <span>🔄 Bạn đã đăng lại</span>
+
+        {activeTab === "favorites" &&
+          (favorites.length ? (
+            <div className="space-y-4">
+              {favorites.map((t) => (
+                <div key={t._id} className="space-y-3">
+                  <div className="text-xs text-neutral-600 dark:text-neutral-400 flex items-center gap-2 font-bold px-2">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon>
+                    </svg>
+                    <span>⭐ Bài viết yêu thích</span>
+                  </div>
+                  <ThreadItem 
+                    thread={t} 
+                    onDelete={(threadId) => {
+                      setFavorites(prev => prev.filter(thread => thread._id !== threadId));
+                    }}
+                  />
                 </div>
-                <ThreadItem thread={t} />
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 px-4">
               <div className="w-20 h-20 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-4">
-                <span className="text-4xl">🔄</span>
+                <span className="text-4xl">⭐</span>
               </div>
               <div className="text-base text-neutral-600 dark:text-neutral-400 font-bold">
-                Bạn chưa đăng lại bài viết nào
+                Bạn chưa có bài viết yêu thích nào
               </div>
               <div className="text-sm text-neutral-500 dark:text-neutral-500 font-medium mt-1">
-                Các bài đăng lại sẽ hiển thị ở đây
+                Các bài viết bạn yêu thích sẽ hiển thị ở đây
               </div>
             </div>
           ))}

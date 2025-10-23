@@ -59,7 +59,7 @@ export default function UpgradeBanner() {
 
   return (
     <>
-      <div className="sticky top-0 z-40 bg-black dark:bg-white text-white dark:text-black border-b border-black/10 dark:border-white/10">
+      <div className="sticky top-0 z-50 bg-black dark:bg-white text-white dark:text-black border-b border-black/10 dark:border-white/10 w-full">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

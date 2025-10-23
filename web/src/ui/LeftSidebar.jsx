@@ -47,6 +47,22 @@ export default function LeftSidebar({ onAdd, theme, setTheme }) {
   const navigate = useNavigate();
   const [openMenu, setOpenMenu] = useState(false);
   const [openPwd, setOpenPwd] = useState(false);
+  
+  // Check if upgrade banner should be shown
+  const shouldShowBanner = () => {
+    if (user?.isPro && user?.proExpiry) {
+      const expiryDate = new Date(user.proExpiry);
+      const now = new Date();
+      const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+      return daysLeft <= 7; // Show banner if 7 days or less
+    }
+    if (user?.isPro && !user?.proExpiry) {
+      return false; // Pro forever, no banner
+    }
+    return !user?.isPro; // Show banner for non-pro users
+  };
+  
+  const bannerHeight = shouldShowBanner() ? 'top-16' : 'top-0'; // Approximate banner height
   const openComposer = () => {
     if (onAdd) return onAdd();
     const el = document.getElementById('thread-composer');
@@ -60,7 +76,22 @@ export default function LeftSidebar({ onAdd, theme, setTheme }) {
   };
 
   return (
-    <div className="sticky top-0 space-y-4">
+    <div className={`fixed ${bannerHeight} left-0 w-64 z-30 bg-subtle-gradient hidden md:block`} style={{ height: shouldShowBanner() ? 'calc(100vh - 4rem)' : '100vh' }}>
+      <div 
+        className="h-full overflow-y-auto sidebar-scrollable space-y-4 py-4 px-4"
+        onWheel={(e) => {
+          // Completely prevent wheel events from propagating to parent
+          e.stopPropagation();
+          
+          const { deltaY } = e;
+          const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+          
+          // If at scroll limits, prevent scrolling to avoid page scroll
+          if ((deltaY < 0 && scrollTop <= 0) || 
+              (deltaY > 0 && scrollTop + clientHeight >= scrollHeight)) {
+            e.preventDefault();
+          }
+        }}>
       {/* Logo Section */}
       <div className="bg-white dark:bg-black border border-black/10 dark:border-white/15 rounded-2xl p-4">
         <div className="flex items-center gap-3">
@@ -169,6 +200,7 @@ export default function LeftSidebar({ onAdd, theme, setTheme }) {
 
       {/* Password Change Modal */}
       <ChangePasswordModal open={openPwd} onClose={() => setOpenPwd(false)} />
+      </div>
     </div>
   );
 }

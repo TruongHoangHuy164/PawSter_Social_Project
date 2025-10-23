@@ -118,3 +118,13 @@ input, textarea, select { background: #ffffff; border: 1px solid var(--panel-bor
 /* Subtle gradient page background for depth */
 .bg-subtle-gradient { background: linear-gradient(180deg, rgba(0,0,0,.02), transparent 30%); }
 
+/* Hide scrollbar for sidebar */
+.sidebar-scrollable {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.sidebar-scrollable::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+

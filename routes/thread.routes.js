@@ -29,7 +29,7 @@ router.get("/hashtags/trending", authMiddleware, getTrendingHashtags);
 router.get("/:id", authMiddleware, getThread);
 router.get("/:id/replies", authMiddleware, listReplies);
 router.post("/:id/replies", authMiddleware, uploadThreadMedia, createReply);
-router.patch("/:id", authMiddleware, updateThread);
+router.patch("/:id", authMiddleware, uploadThreadMedia, updateThread);
 router.delete("/:id", authMiddleware, deleteThread);
 
 // Like/Unlike routes

@@ -6,6 +6,7 @@ import { useAuth } from "../state/auth.jsx"
 import { useSocket } from "../state/socket.jsx"
 import ProBadge from "./ProBadge.jsx"
 import ReplyInput from "./ReplyInput.jsx"
+import CommentEditor from "./CommentEditor.jsx"
 
 export default function CommentSection({ threadId, onCommentCountChange }) {
   const { user, token } = useAuth()
@@ -21,6 +22,11 @@ export default function CommentSection({ threadId, onCommentCountChange }) {
   const [replyingTo, setReplyingTo] = useState(null)
   const [expandedReplies, setExpandedReplies] = useState(new Set())
   const [reloadingForParent, setReloadingForParent] = useState(false)
+  
+  // Comment editing states
+  const [editingCommentId, setEditingCommentId] = useState(null)
+  const [dropdownOpen, setDropdownOpen] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const loadComments = useCallback(async (pageNum = 1, append = false) => {
     try {
@@ -32,61 +38,84 @@ export default function CommentSection({ threadId, onCommentCountChange }) {
       setError('')
 
       console.log('📡 Loading comments:', { threadId, page: pageNum, append });
-      // Luôn load 3 comments mỗi lần (không phân biệt trang đầu hay không)
-      const response = await commentApi.getComments(threadId, pageNum, 3, null, token)
-      const newComments = response.data.data || []
-      console.log('📝 Loaded comments:', newComments.length);
       
-      if (append) {
-        setComments(prev => [...prev, ...newComments])
-      } else {
-        setComments(prev => {
-          // First, try to merge any temporary replies that might exist
-          const tempReplies = prev.filter(c => c.isTemporaryReply);
-          const mergedComments = [...newComments];
-          
-          if (tempReplies.length > 0) {
-            console.log('🔄 Merging temporary replies with loaded comments...');
-            
-            tempReplies.forEach(tempReply => {
-              const parentIndex = mergedComments.findIndex(c => c._id === tempReply.originalParentId);
-              if (parentIndex !== -1) {
-                console.log('✅ Found parent for temporary reply, merging...');
-                mergedComments[parentIndex] = {
-                  ...mergedComments[parentIndex],
-                  replies: [...(mergedComments[parentIndex].replies || []), {
-                    ...tempReply,
-                    isTemporaryReply: false,
-                    originalParentId: undefined
-                  }],
-                  repliesCount: (mergedComments[parentIndex].repliesCount || 0) + 1
-                };
-                
-                // Auto-expand the parent
-                setExpandedReplies(prevExpanded => {
-                  const newSet = new Set(prevExpanded);
-                  newSet.add(tempReply.originalParentId);
-                  return newSet;
-                });
-              } else {
-                console.log('⚠️ Parent still not found for temporary reply, discarding...');
-                // Don't keep temporary replies if parent is still not found
-              }
-            });
-          }
-          
-          return mergedComments;
-        });
-      }
-
-      setHasMore(newComments.length === 3 && (append ? comments.length + newComments.length < (response.data.pagination?.total || 0) : newComments.length < (response.data.pagination?.total || 0)))
-      setPage(pageNum)
+      // Check if this is a repost threadId (starts with "repost_")
+      const isRepostComments = threadId.startsWith('repost_');
       
-      // Update comment count and total
-      if (pageNum === 1) {
-        setTotalComments(response.data.pagination?.total || newComments.length)
+      if (isRepostComments) {
+        // For repost comments, use localStorage
+        const storedComments = JSON.parse(localStorage.getItem(`comments_${threadId}`) || '[]');
+        const newComments = storedComments.slice((pageNum - 1) * 3, pageNum * 3);
+        console.log('📝 Loaded repost comments from localStorage:', newComments.length);
+        setHasMore(newComments.length === 3 && storedComments.length > pageNum * 3);
+        
+        if (append) {
+          setComments(prev => [...prev, ...newComments])
+        } else {
+          setComments(newComments)
+        }
+        setTotalComments(storedComments.length);
         if (onCommentCountChange) {
-          onCommentCountChange(response.data.pagination?.total || newComments.length)
+          onCommentCountChange(storedComments.length);
+        }
+      } else {
+        // For regular threads, use API
+        // Luôn load 3 comments mỗi lần (không phân biệt trang đầu hay không)
+        const response = await commentApi.getComments(threadId, pageNum, 3, null, token)
+        const newComments = response.data.data || []
+        console.log('📝 Loaded comments:', newComments.length);
+      
+        if (append) {
+          setComments(prev => [...prev, ...newComments])
+        } else {
+          setComments(prev => {
+            // First, try to merge any temporary replies that might exist
+            const tempReplies = prev.filter(c => c.isTemporaryReply);
+            const mergedComments = [...newComments];
+            
+            if (tempReplies.length > 0) {
+              console.log('🔄 Merging temporary replies with loaded comments...');
+              
+              tempReplies.forEach(tempReply => {
+                const parentIndex = mergedComments.findIndex(c => c._id === tempReply.originalParentId);
+                if (parentIndex !== -1) {
+                  console.log('✅ Found parent for temporary reply, merging...');
+                  mergedComments[parentIndex] = {
+                    ...mergedComments[parentIndex],
+                    replies: [...(mergedComments[parentIndex].replies || []), {
+                      ...tempReply,
+                      isTemporaryReply: false,
+                      originalParentId: undefined
+                    }],
+                    repliesCount: (mergedComments[parentIndex].repliesCount || 0) + 1
+                  };
+                  
+                  // Auto-expand the parent
+                  setExpandedReplies(prevExpanded => {
+                    const newSet = new Set(prevExpanded);
+                    newSet.add(tempReply.originalParentId);
+                    return newSet;
+                  });
+                } else {
+                  console.log('⚠️ Parent still not found for temporary reply, discarding...');
+                  // Don't keep temporary replies if parent is still not found
+                }
+              });
+            }
+            
+            return mergedComments;
+          });
+        }
+
+        setHasMore(newComments.length === 3 && (append ? comments.length + newComments.length < (response.data.pagination?.total || 0) : newComments.length < (response.data.pagination?.total || 0)))
+        setPage(pageNum)
+        
+        // Update comment count and total
+        if (pageNum === 1) {
+          setTotalComments(response.data.pagination?.total || newComments.length)
+          if (onCommentCountChange) {
+            onCommentCountChange(response.data.pagination?.total || newComments.length)
+          }
         }
       }
     } catch (err) {
@@ -398,6 +427,22 @@ export default function CommentSection({ threadId, onCommentCountChange }) {
     }
   }
 
+  const handleEditComment = (commentId) => {
+    setEditingCommentId(commentId)
+    setDropdownOpen(null)
+  }
+
+  const handleCommentUpdated = (updatedComment) => {
+    setComments(prev => prev.map(c => c._id === updatedComment._id ? updatedComment : c))
+    setEditingCommentId(null)
+    // Force refresh to show updated content with proper mentions/media
+    setRefreshKey(prev => prev + 1)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null)
+  }
+
   const loadMoreComments = () => {
     if (!loadingMore && hasMore) {
       loadComments(page + 1, true)
@@ -451,7 +496,7 @@ export default function CommentSection({ threadId, onCommentCountChange }) {
         <>
           {comments.map(comment => (
             <CommentItem
-              key={comment._id}
+              key={`${comment._id}-${refreshKey}`}
               comment={comment}
               onReply={(commentId) => setReplyingTo(commentId)}
               onDelete={handleDeleteComment}
@@ -461,6 +506,13 @@ export default function CommentSection({ threadId, onCommentCountChange }) {
               user={user}
               token={token}
               isTemporary={comment.isTemporaryReply}
+              // Edit functionality
+              editingCommentId={editingCommentId}
+              dropdownOpen={dropdownOpen}
+              onEdit={handleEditComment}
+              onCommentUpdated={handleCommentUpdated}
+              onCancelEdit={handleCancelEdit}
+              setDropdownOpen={setDropdownOpen}
             />
           ))}
           
@@ -482,7 +534,11 @@ export default function CommentSection({ threadId, onCommentCountChange }) {
 }
 
 // Comment Item Component
-function CommentItem({ comment, onReply, onDelete, onToggleLike, onLoadReplies, expandedReplies, user, token, isTemporary = false }) {
+function CommentItem({ 
+  comment, onReply, onDelete, onToggleLike, onLoadReplies, expandedReplies, user, token, isTemporary = false,
+  // Edit functionality
+  editingCommentId, dropdownOpen, onEdit, onCommentUpdated, onCancelEdit, setDropdownOpen
+}) {
   const [signed, setSigned] = useState({})
   const [loadingIdx, setLoadingIdx] = useState({})
   const [errorIdx, setErrorIdx] = useState({})
@@ -507,20 +563,54 @@ function CommentItem({ comment, onReply, onDelete, onToggleLike, onLoadReplies, 
     setHasMoreReplies((comment.repliesCount || 0) > (comment.replies || []).length)
   }, [comment.replies, comment.repliesCount])
 
+  // Helper to get consistent media key for comments
+  const getMediaKey = useCallback((i) => {
+    const media = comment.media?.[i];
+    return media ? `${media._id}-${i}` : `idx-${i}`;
+  }, [comment.media]);
+
   const fetchSigned = useCallback(async (i) => {
-    if (signed[i] || loadingIdx[i]) return
-    setLoadingIdx((s) => ({ ...s, [i]: true }))
-    try {
-      const res = await api.get(`/media/comment/${comment._id}/${i}`, token)
-      const url = res.data.data.url
-      setSigned((s) => ({ ...s, [i]: url }))
-    } catch (e) {
-      console.error("Fetch signed failed", e)
-      setErrorIdx((s) => ({ ...s, [i]: true }))
-    } finally {
-      setLoadingIdx((s) => ({ ...s, [i]: false }))
-    }
-  }, [signed, loadingIdx, comment._id, token])
+    const media = comment.media?.[i];
+    if (!media) return;
+    
+    const mediaKey = getMediaKey(i);
+    
+    setLoadingIdx((s) => {
+      if (s[mediaKey]) return s; // Already loading
+      return { ...s, [mediaKey]: true };
+    });
+
+    setSigned((s) => {
+      if (s[mediaKey]) {
+        setLoadingIdx(prev => ({ ...prev, [mediaKey]: false }));
+        return s; // Already have URL
+      }
+      
+      // Fetch URL
+      api.get(`/media/comment/${comment._id}/${i}`, token)
+        .then(res => {
+          const url = res.data.data.url;
+          setSigned(prev => ({ ...prev, [mediaKey]: url }));
+        })
+        .catch(e => {
+          console.error("Fetch signed failed", e);
+          setErrorIdx(prev => ({ ...prev, [mediaKey]: true }));
+        })
+        .finally(() => {
+          setLoadingIdx(prev => ({ ...prev, [mediaKey]: false }));
+        });
+      
+      return s;
+    });
+  }, [comment._id, comment.media, token, getMediaKey])
+
+  // Clear cache when media changes to prevent stale thumbnails
+  useEffect(() => {
+    // Clear signed URLs when media signature changes
+    setSigned({});
+    setLoadingIdx({});
+    setErrorIdx({});
+  }, [comment.media?.length, comment.media?.map?.(m => m._id).join?.(',')]);
 
   // Preload images
   useEffect(() => {
@@ -529,7 +619,22 @@ function CommentItem({ comment, onReply, onDelete, onToggleLike, onLoadReplies, 
         if (m.type === "image") fetchSigned(i)
       })
     }
-  }, [comment.media, fetchSigned])
+  }, [comment.media, comment._id])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (dropdownOpen !== comment._id) return
+    
+    const handleClickOutside = (e) => {
+      // Check if click is outside the dropdown
+      if (!e.target.closest(`[data-comment-id="${comment._id}"]`)) {
+        setDropdownOpen(null)
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [dropdownOpen, comment._id, setDropdownOpen])
 
   const handleLoadReplies = async () => {
     if (showReplies) {
@@ -615,27 +720,71 @@ function CommentItem({ comment, onReply, onDelete, onToggleLike, onLoadReplies, 
         {comment.author?.isPro && <ProBadge />}
         <span className="text-xs muted">{new Date(comment.createdAt).toLocaleString("vi-VN")}</span>
         {isOwner && (
-          <button
-            onClick={() => onDelete(comment._id)}
-            className="ml-auto text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50"
-          >
-            Xóa
-          </button>
+          <div className="ml-auto relative">
+            <button
+              onClick={() => setDropdownOpen(dropdownOpen === comment._id ? null : comment._id)}
+              className="p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              title="Tùy chọn"
+            >
+              <svg className="w-4 h-4 text-neutral-600 dark:text-neutral-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+              </svg>
+            </button>
+            
+            {dropdownOpen === comment._id && (
+              <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-neutral-900 border border-black/10 dark:border-white/10 rounded-xl shadow-lg z-50">
+                <div className="py-1">
+                  <button
+                    onClick={() => onEdit(comment._id)}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/5 text-neutral-700 dark:text-neutral-300 flex items-center gap-2"
+                  >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="m18.5 2.5 a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  Chỉnh sửa
+                </button>
+                <button
+                  onClick={() => {
+                    setDropdownOpen(null)
+                    onDelete(comment._id)
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center gap-2"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3,6 5,6 21,6"></polyline>
+                    <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2v2"></path>
+                  </svg>
+                  Xóa
+                </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Comment Content */}
-      <div className="text-sm leading-relaxed whitespace-pre-wrap text-neutral-800 dark:text-neutral-200">
-        {renderCommentContent(comment.content)}
-      </div>
+      {/* Comment Content or Editor */}
+      {editingCommentId === comment._id ? (
+        <CommentEditor
+          comment={comment}
+          onUpdated={onCommentUpdated}
+          onCancel={onCancelEdit}
+        />
+      ) : (
+        <div className="text-sm leading-relaxed whitespace-pre-wrap text-neutral-800 dark:text-neutral-200">
+          {renderCommentContent(comment.content)}
+        </div>
+      )}
 
       {/* Comment Media */}
       {comment.media && comment.media.length > 0 && (
         <div className="flex gap-2 flex-wrap">
           {comment.media.map((media, i) => {
-            const url = signed[i]
-            const loading = loadingIdx[i]
-            const error = errorIdx[i]
+            const mediaKey = getMediaKey(i);
+            const url = signed[mediaKey]
+            const loading = loadingIdx[mediaKey]
+            const error = errorIdx[mediaKey]
 
             if (media.type === "image") {
               return (
@@ -805,6 +954,13 @@ function CommentItem({ comment, onReply, onDelete, onToggleLike, onLoadReplies, 
               expandedReplies={new Set()}
               user={user}
               token={token}
+              // Edit functionality for replies
+              editingCommentId={editingCommentId}
+              dropdownOpen={dropdownOpen}
+              onEdit={onEdit}
+              onCommentUpdated={onCommentUpdated}
+              onCancelEdit={onCancelEdit}
+              setDropdownOpen={setDropdownOpen}
             />
           ))}
           

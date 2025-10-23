@@ -78,7 +78,7 @@ router.get("/thread/:threadId", authMiddleware, getComments);
 router.get("/:commentId/replies", authMiddleware, getReplies);
 
 // Update a comment
-router.patch("/:id", authMiddleware, updateComment);
+router.patch("/:id", authMiddleware, uploadThreadMedia, updateComment);
 
 // Delete a comment
 router.delete("/:id", authMiddleware, deleteComment);

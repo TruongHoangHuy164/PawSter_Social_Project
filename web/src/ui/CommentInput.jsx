@@ -72,30 +72,64 @@ export default function CommentInput({ threadId, onCommentCreated }) {
     setError('')
     
     try {
-      if (files.length > 0) {
-        const formData = new FormData()
-        if (content.trim()) formData.append('content', content.trim())
-        if (threadId) formData.append('threadId', threadId)
-        files.forEach(file => formData.append('media', file))
-        
-        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/comments`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
+      // Check if this is a repost threadId (starts with "repost_")
+      const isRepostComments = threadId.startsWith('repost_');
+      
+      if (isRepostComments) {
+        // For repost comments, save to localStorage
+        const newComment = {
+          _id: `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          content: content.trim(),
+          author: {
+            _id: 'current_user',
+            username: 'You',
+            isPro: false
           },
-          body: formData
-        })
+          createdAt: new Date().toISOString(),
+          likes: [],
+          likesCount: 0,
+          replies: [],
+          repliesCount: 0,
+          media: files.length > 0 ? files.map(f => ({
+            type: f.type.startsWith('image/') ? 'image' : 'video',
+            url: URL.createObjectURL(f),
+            filename: f.name
+          })) : undefined
+        };
         
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || 'Upload failed')
-        }
-        await response.json()
+        // Get existing comments
+        const existingComments = JSON.parse(localStorage.getItem(`comments_${threadId}`) || '[]');
+        const updatedComments = [newComment, ...existingComments];
+        
+        // Save to localStorage
+        localStorage.setItem(`comments_${threadId}`, JSON.stringify(updatedComments));
       } else {
-        await commentApi.createComment({
-          threadId,
-          content: content.trim()
-        }, token)
+        // For regular threads, use API
+        if (files.length > 0) {
+          const formData = new FormData()
+          if (content.trim()) formData.append('content', content.trim())
+          if (threadId) formData.append('threadId', threadId)
+          files.forEach(file => formData.append('media', file))
+          
+          const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/comments`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          })
+          
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.message || 'Upload failed')
+          }
+          await response.json()
+        } else {
+          await commentApi.createComment({
+            threadId,
+            content: content.trim()
+          }, token)
+        }
       }
       
       setContent('')
