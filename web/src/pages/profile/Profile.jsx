@@ -32,6 +32,7 @@ export default function Profile() {
   const [loaded, setLoaded] = useState(false);
   const [repostsLoaded, setRepostsLoaded] = useState(false);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
 
   const proExpiryStr = React.useMemo(() => {
@@ -284,10 +285,37 @@ export default function Profile() {
                 <span>PRO</span>
               </span>
             )}
+            <button
+              type="button"
+              onClick={() => setShowEdit((v) => !v)}
+              title="Chỉnh sửa hồ sơ"
+              className="ml-1 px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 text-sm font-bold bg-white/50 dark:bg-black/50 hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+            >
+              . . .
+            </button>
           </div>
           <div className="text-neutral-500 text-sm font-medium">
             @{user.username}
           </div>
+
+          {bio && (
+            <div className="text-sm text-neutral-700 dark:text-neutral-300 font-medium whitespace-pre-wrap">
+              {bio}
+            </div>
+          )}
+          {website && (
+            <div className="text-sm font-semibold">
+              <span className="text-neutral-500 mr-1">Website:</span>
+              <a
+                className="text-black dark:text-white hover:underline"
+                target="_blank"
+                rel="noreferrer"
+                href={website}
+              >
+                {website}
+              </a>
+            </div>
+          )}
 
           {/* Stats Cards */}
           <div className="flex flex-wrap gap-3 mt-2">
@@ -327,7 +355,8 @@ export default function Profile() {
         </div>
       </div>
       
-      {/* EDIT FIELDS */}
+      {/* EDIT FIELDS (hidden by default, toggle via ... button) */}
+      {showEdit && (
       <div className="bg-white/30 dark:bg-black/30 border-2 border-black/10 dark:border-white/10 rounded-3xl p-6 space-y-6 card backdrop-blur-sm shadow-lg">
         <h3 className="text-lg font-bold flex items-center gap-2">
           <svg
@@ -461,25 +490,8 @@ export default function Profile() {
             </div>
           )}
         </div>
-        {website && (
-          <div className="text-xs text-neutral-400 font-medium">
-            <span className="font-bold">Website:</span>{" "}
-            <a
-              className="text-black dark:text-white hover:underline font-semibold"
-              target="_blank"
-              rel="noreferrer"
-              href={website}
-            >
-              {website}
-            </a>
-          </div>
-        )}
-        {bio && (
-          <div className="text-sm text-neutral-300 whitespace-pre-wrap font-medium">
-            {bio}
-          </div>
-        )}
       </div>
+      )}
       {/* TABS */}
       <div className="border-b border-black/10 dark:border-white/10 flex gap-2 px-2">
         {TABS.map((t) => (
