@@ -231,12 +231,22 @@ io.use(async (socket, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("✅ JWT verified for user:", decoded.id);
 
-    // Get user from database
-    const user = await User.findById(decoded.id).select("-password");
+  // Get user from database
+  const user = await User.findById(decoded.id).select("-password");
 
     if (!user) {
       console.log("❌ User not found:", decoded.id);
       return next(new Error("User not found"));
+    }
+
+    // Enforce lock for socket connections as well
+    const now = Date.now();
+    const isLocked = user.status === 'locked' || (user.lockedUntil && user.lockedUntil.getTime() > now);
+    if (isLocked) {
+      const until = user.lockedUntil && user.lockedUntil.getTime() > now ? user.lockedUntil : null;
+      const reason = user.lockedReason || 'Tài khoản đã bị khoá';
+      console.log(`❌ Socket auth rejected: locked user ${user.username}. Reason=${reason}, until=${until || 'indefinite'}`);
+      return next(new Error('Account locked'));
     }
 
     console.log("✅ User authenticated:", user.username);

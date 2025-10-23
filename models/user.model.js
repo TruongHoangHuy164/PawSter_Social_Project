@@ -25,6 +25,7 @@ const userSchema = new mongoose.Schema(
     // Account status and locking
     status: { type: String, enum: ["active", "locked"], default: "active", index: true },
     lockedUntil: { type: Date },
+  lockedReason: { type: String },
     // Admin warnings history
     warnings: [
       {

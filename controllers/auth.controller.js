@@ -61,6 +61,15 @@ export const login = asyncHandler(async (req, res) => {
     return res
       .status(401)
       .json({ success: false, message: "Invalid credentials" });
+  // Enforce account lock
+  const now = Date.now();
+  const isLocked = user.status === 'locked' || (user.lockedUntil && user.lockedUntil.getTime() > now);
+  if (isLocked) {
+    const until = user.lockedUntil && user.lockedUntil.getTime() > now ? user.lockedUntil : null;
+    const reason = user.lockedReason || (user.warnings || []).slice().reverse().find(w => String(w.message || '').startsWith('LOCK:'))?.message?.replace(/^LOCK:\s*/, '') || 'Tài khoản của bạn đã bị khoá';
+    const message = `Tài khoản đã bị khoá. Lý do: ${reason}${until ? `. Mở khoá vào: ${until.toLocaleString('vi-VN')}` : ' (vô thời hạn)'}.`;
+    return res.status(403).json({ success: false, code: 'ACCOUNT_LOCKED', message, data: { reason, lockedUntil: until } });
+  }
   const token = signToken(user);
   res.json({
     success: true,
@@ -116,6 +125,15 @@ export const googleLogin = asyncHandler(async (req, res) => {
     user.googleId = sub; await user.save();
   }
 
+  // Enforce account lock
+  const now = Date.now();
+  const isLocked = user.status === 'locked' || (user.lockedUntil && user.lockedUntil.getTime() > now);
+  if (isLocked) {
+    const until = user.lockedUntil && user.lockedUntil.getTime() > now ? user.lockedUntil : null;
+    const reason = user.lockedReason || (user.warnings || []).slice().reverse().find(w => String(w.message || '').startsWith('LOCK:'))?.message?.replace(/^LOCK:\s*/, '') || 'Tài khoản của bạn đã bị khoá';
+    const message = `Tài khoản đã bị khoá. Lý do: ${reason}${until ? `. Mở khoá vào: ${until.toLocaleString('vi-VN')}` : ' (vô thời hạn)'}.`;
+    return res.status(403).json({ success: false, code: 'ACCOUNT_LOCKED', message, data: { reason, lockedUntil: until } });
+  }
   const token = signToken(user);
   res.json({
     success: true,

@@ -735,12 +735,12 @@ export default function Users() {
                     >
                       Cảnh cáo
                     </button>
-                    <button
+                    {/* <button
                       className="px-2 py-1 text-xs rounded bg-red-600/80 text-white"
                       onClick={() => resetPassword(u._id)}
                     >
                       Reset mật khẩu
-                    </button>
+                    </button> */}
                   </td>
                 </tr>
               ))}

@@ -13,6 +13,7 @@ function typeToText(t) {
     case 'like_thread': return 'đã thích nội dung của bạn';
     case 'like_comment': return 'đã thích bình luận của bạn';
     case 'repost_thread': return 'đã chia sẻ lại bài viết của bạn';
+    case 'content_warning': return 'đã cảnh báo vi phạm nội dung';
     default: return 'đã tương tác';
   }
 }
@@ -75,7 +76,7 @@ export default function Notification() {
     }
 
     // Navigate based on type
-    if (n.type === 'comment' || n.type === 'like_thread' || n.type === 'repost_thread' || n.type === 'like_comment') {
+    if (n.type === 'comment' || n.type === 'like_thread' || n.type === 'repost_thread' || n.type === 'like_comment' || n.type === 'content_warning') {
       if (n.thread?._id) navigate(`/?threadId=${n.thread._id}`);
       else navigate('/');
     } else if (n.type === 'follow' || n.type === 'friend_accepted') {
@@ -116,6 +117,9 @@ export default function Notification() {
               )}
               {n.comment?.content && (
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">Bình luận: {n.comment.content}</div>
+              )}
+              {n.type === 'content_warning' && n.meta?.reason && (
+                <div className="text-xs text-red-600 dark:text-red-400 mt-1 line-clamp-2">Lý do: {n.meta.reason}</div>
               )}
               <div className="text-[11px] text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
             </div>

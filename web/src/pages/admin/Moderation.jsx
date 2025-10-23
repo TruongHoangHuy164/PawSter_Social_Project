@@ -10,6 +10,7 @@ export default function Moderation() {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const [autoWarn, setAutoWarn] = useState(true);
 
   const load = async () => {
     setLoading(true);
@@ -38,7 +39,15 @@ export default function Moderation() {
     try {
       const path = type === 'thread' ? `/admin/moderation/threads/${id}` : `/admin/moderation/comments/${id}`;
       if (action === 'approve') await api.post(`${path}/approve`, undefined, token);
-      else if (action === 'reject') await api.post(`${path}/reject`, undefined, token);
+      else if (action === 'reject') {
+        const reason = prompt('Lý do từ chối? (tùy chọn)', 'Vi phạm chính sách nội dung');
+        const doWarn = autoWarn ? true : confirm('Cộng 1 cảnh cáo cho tác giả?');
+        const resp = await api.post(`${path}/reject`, { warn: doWarn, reason }, token);
+        const user = resp?.data?.user;
+        if (user) {
+          alert(`Cảnh cáo hiện tại: ${user.warningsCount}. ${user.status==='locked' ? 'Tài khoản đã bị khoá.' : ''}`);
+        }
+      }
       else if (action === 'delete') await api.del(type === 'thread' ? `/admin/threads/${id}` : `${path}`, token);
       await load();
     } catch (e) {
@@ -58,6 +67,10 @@ export default function Moderation() {
             <option value="APPROVED">APPROVED</option>
             <option value="REJECTED">REJECTED</option>
           </select>
+          <label className="text-sm inline-flex items-center gap-1 ml-2">
+            <input type="checkbox" checked={autoWarn} onChange={(e)=>setAutoWarn(e.target.checked)} />
+            +1 cảnh cáo khi từ chối
+          </label>
         </div>
       </div>
 
@@ -69,10 +82,20 @@ export default function Moderation() {
           {threads.map(t => (
             <div key={t._id} className="card p-4 flex gap-3 items-start">
               <div className="flex-1">
-                <div className="text-sm mb-1"><b>{t.author?.username}</b> • <span className="muted">{new Date(t.createdAt).toLocaleString('vi-VN')}</span></div>
+                <div className="text-sm mb-2 flex items-center gap-2 flex-wrap">
+                  <b>{t.author?.username}</b>
+                  <span className="px-2 py-0.5 rounded-full text-xs border border-black/15 dark:border-white/20">{status}</span>
+                  {typeof t.author?.warnings?.length === 'number' && (
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-600/10 border border-yellow-600/20 text-yellow-700 dark:text-yellow-400">Cảnh cáo: {t.author.warnings.length}/5</span>
+                  )}
+                  {t.author?.status === 'locked' && (
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-red-600/10 border border-red-600/20 text-red-700 dark:text-red-400">Đã khoá</span>
+                  )}
+                  <span className="muted">{new Date(t.createdAt).toLocaleString('vi-VN')}</span>
+                </div>
                 <div className="whitespace-pre-wrap text-sm">{t.content}</div>
                 {t.media?.length>0 && (
-                  <div className="mt-2 text-xs muted">{t.media.length} media</div>
+                  <MediaStrip type="thread" itemId={t._id} media={t.media} />
                 )}
                 {t.moderation?.labels?.length>0 && (
                   <div className="mt-2 text-xs">🏷️ {t.moderation.labels.join(', ')}</div>
@@ -94,11 +117,21 @@ export default function Moderation() {
           {comments.map(c => (
             <div key={c._id} className="card p-4 flex gap-3 items-start">
               <div className="flex-1">
-                <div className="text-sm mb-1"><b>{c.author?.username}</b> • <span className="muted">{new Date(c.createdAt).toLocaleString('vi-VN')}</span></div>
+                <div className="text-sm mb-2 flex items-center gap-2 flex-wrap">
+                  <b>{c.author?.username}</b>
+                  <span className="px-2 py-0.5 rounded-full text-xs border border-black/15 dark:border-white/20">{status}</span>
+                  {typeof c.author?.warnings?.length === 'number' && (
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-600/10 border border-yellow-600/20 text-yellow-700 dark:text-yellow-400">Cảnh cáo: {c.author.warnings.length}/5</span>
+                  )}
+                  {c.author?.status === 'locked' && (
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-red-600/10 border border-red-600/20 text-red-700 dark:text-red-400">Đã khoá</span>
+                  )}
+                  <span className="muted">{new Date(c.createdAt).toLocaleString('vi-VN')}</span>
+                </div>
                 <div className="text-xs muted">Trả lời bài của {c.threadId?.author?.username || '...'}</div>
                 <div className="whitespace-pre-wrap text-sm mt-1">{c.content}</div>
                 {c.media?.length>0 && (
-                  <div className="mt-2 text-xs muted">{c.media.length} media</div>
+                  <MediaStrip type="comment" itemId={c._id} media={c.media} />
                 )}
                 {c.moderation?.labels?.length>0 && (
                   <div className="mt-2 text-xs">🏷️ {c.moderation.labels.join(', ')}</div>
@@ -113,6 +146,58 @@ export default function Moderation() {
           ))}
           {comments.length===0 && !loading && <div className="card p-4">Không có bình luận nào.</div>}
         </div>
+      )}
+    </div>
+  );
+}
+
+function MediaStrip({ type, itemId, media }) {
+  const { token } = useAuth();
+  const [urls, setUrls] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const limited = media.slice(0, 3);
+        const results = await Promise.all(
+          limited.map((m, i) =>
+            m.type === 'image'
+              ? api.get(`/media/${type}/${itemId}/${i}`, token).catch(() => null)
+              : Promise.resolve(null)
+          )
+        );
+        if (!mounted) return;
+        setUrls(results.map((r) => r?.data?.data?.url || null));
+      } catch (e) {
+        // ignore
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [type, itemId, media, token]);
+
+  if (!media?.length) return null;
+
+  return (
+    <div className="mt-2 flex gap-2 items-center flex-wrap">
+      {media.slice(0, 3).map((m, i) => (
+        <div key={i} className="w-20 h-20 rounded overflow-hidden bg-[var(--panel)] border border-[var(--panel-border)] flex items-center justify-center text-xs">
+          {m.type === 'image' && urls[i] ? (
+            <img src={urls[i]} alt="media" className="w-full h-full object-cover" />
+          ) : m.type === 'video' ? (
+            <span>🎬 video</span>
+          ) : m.type === 'audio' ? (
+            <span>🎵 audio</span>
+          ) : (
+            <span>file</span>
+          )}
+        </div>
+      ))}
+      {media.length > 3 && (
+        <span className="text-xs muted">+{media.length - 3} nữa</span>
       )}
     </div>
   );

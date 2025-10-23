@@ -13,6 +13,7 @@ const notificationSchema = new mongoose.Schema(
         "like_thread",
         "like_comment",
         "repost_thread",
+        "content_warning",
       ],
       required: true,
     },

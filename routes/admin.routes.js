@@ -315,12 +315,13 @@ router.post("/users/:id/lock", asyncHandler(async (req, res) => {
   if (!lockedUntil && hours) lockedUntil = new Date(Date.now() + Number(hours) * 3600 * 1000);
   u.status = "locked";
   u.lockedUntil = lockedUntil || new Date(Date.now() + 24 * 3600 * 1000);
+  u.lockedReason = reason || u.lockedReason || "Tài khoản bị khóa bởi quản trị viên";
   if (reason) {
     u.warnings = u.warnings || [];
     u.warnings.push({ message: `LOCK: ${reason}`, by: req.user._id });
   }
   await u.save();
-  res.json({ success: true, data: { _id: u._id, status: u.status, lockedUntil: u.lockedUntil } });
+  res.json({ success: true, data: { _id: u._id, status: u.status, lockedUntil: u.lockedUntil, lockedReason: u.lockedReason } });
 }));
 
 // Unlock user
@@ -329,6 +330,7 @@ router.post("/users/:id/unlock", asyncHandler(async (req, res) => {
   if (!u) return res.status(404).json({ success: false, message: "Not found" });
   u.status = "active";
   u.lockedUntil = null;
+  u.lockedReason = undefined;
   await u.save();
   res.json({ success: true, data: { _id: u._id, status: u.status } });
 }));
@@ -342,6 +344,19 @@ router.post("/users/:id/warn", asyncHandler(async (req, res) => {
   u.warnings = u.warnings || [];
   u.warnings.push({ message, by: req.user._id });
   await u.save();
+  // Notify the user about manual warning
+  try {
+    const { notify } = await import("../utils/notifications.js");
+    await notify({
+      io: req.io,
+      userId: u._id,
+      actorId: req.user._id,
+      type: "content_warning",
+      meta: { kind: 'account', reason: message, warningsCount: u.warnings.length }
+    });
+  } catch (e) {
+    console.warn('Warn notification failed:', e?.message || e);
+  }
   res.json({ success: true, data: u });
 }));
 
@@ -379,7 +394,7 @@ router.get("/moderation/threads", asyncHandler(async (req, res) => {
   const items = await Thread.find({ status })
     .sort({ createdAt: -1 })
     .limit(200)
-    .populate("author", "username isPro");
+    .populate("author", "username isPro warnings status");
   res.json({ success: true, data: items });
 }));
 
@@ -400,17 +415,57 @@ router.post("/moderation/threads/:id/approve", asyncHandler(async (req, res) => 
 
 // Reject a thread (admin)
 router.post("/moderation/threads/:id/reject", asyncHandler(async (req, res) => {
+  const { warn = true, reason } = req.body || {};
   const t = await Thread.findById(req.params.id);
   if (!t) return res.status(404).json({ success: false, message: "Not found" });
   t.status = "REJECTED";
   t.moderation = {
     ...(t.moderation || {}),
-    notes: (`${t.moderation?.notes || ""}\nRejected by ${req.user.username} (${req.user._id})`).trim(),
+    notes: (
+      `${t.moderation?.notes || ""}\nRejected by ${req.user.username} (${req.user._id})${reason ? `: ${reason}` : ""}`
+    ).trim(),
     reviewer: req.user._id,
     reviewedAt: new Date(),
   };
   await t.save();
-  res.json({ success: true, data: t });
+
+  let userUpdate;
+  if (warn) {
+    const u = await User.findById(t.author);
+    if (u) {
+      u.warnings = u.warnings || [];
+      u.warnings.push({ message: `THREAD_REJECT${reason ? `: ${reason}` : ''}`, by: req.user._id });
+      // Auto-ban when warnings >= 5
+      if (u.warnings.length >= 5) {
+        const fifteenDays = new Date(Date.now() + 15 * 24 * 3600 * 1000);
+        u.status = "locked";
+        // If already locked until a later date, keep the later one; else set to 15 days
+        if (!u.lockedUntil || u.lockedUntil.getTime() < fifteenDays.getTime()) {
+          u.lockedUntil = fifteenDays;
+        }
+        u.lockedReason = "Tài khoản bị khóa 15 ngày do đạt 5 cảnh cáo";
+      }
+      await u.save();
+      userUpdate = { userId: u._id, warningsCount: u.warnings.length, status: u.status, lockedUntil: u.lockedUntil };
+
+      // Notify the author about the content warning
+      try {
+        const { notify } = await import("../utils/notifications.js");
+        await notify({
+          io: req.io,
+          userId: u._id,
+          actorId: req.user._id,
+          type: "content_warning",
+          threadId: t._id,
+          meta: { kind: 'thread', reason: reason || 'Nội dung vi phạm chính sách', warningsCount: u.warnings.length, locked: u.status === 'locked' }
+        });
+      } catch (e) {
+        console.warn('Warn notification failed:', e?.message || e);
+      }
+    }
+  }
+
+  res.json({ success: true, data: t, user: userUpdate });
 }));
 
 // ===== Comment Moderation =====
@@ -421,7 +476,7 @@ router.get("/moderation/comments", asyncHandler(async (req, res) => {
   const items = await Comment.find({ status })
     .sort({ createdAt: -1 })
     .limit(200)
-    .populate("author", "username isPro")
+    .populate("author", "username isPro warnings status")
     .populate("threadId", "content author")
   res.json({ success: true, data: items });
 }));
@@ -441,17 +496,55 @@ router.post("/moderation/comments/:id/approve", asyncHandler(async (req, res) =>
 }));
 
 router.post("/moderation/comments/:id/reject", asyncHandler(async (req, res) => {
+  const { warn = true, reason } = req.body || {};
   const c = await Comment.findById(req.params.id);
   if (!c) return res.status(404).json({ success: false, message: "Not found" });
   c.status = "REJECTED";
   c.moderation = {
     ...(c.moderation || {}),
-    notes: (`${c.moderation?.notes || ""}\nRejected by ${req.user.username} (${req.user._id})`).trim(),
+    notes: (
+      `${c.moderation?.notes || ""}\nRejected by ${req.user.username} (${req.user._id})${reason ? `: ${reason}` : ""}`
+    ).trim(),
     reviewer: req.user._id,
     reviewedAt: new Date(),
   };
   await c.save();
-  res.json({ success: true, data: c });
+
+  let userUpdate;
+  if (warn) {
+    const u = await User.findById(c.author);
+    if (u) {
+      u.warnings = u.warnings || [];
+      u.warnings.push({ message: `COMMENT_REJECT${reason ? `: ${reason}` : ''}`, by: req.user._id });
+      if (u.warnings.length >= 5) {
+        const fifteenDays = new Date(Date.now() + 15 * 24 * 3600 * 1000);
+        u.status = "locked";
+        if (!u.lockedUntil || u.lockedUntil.getTime() < fifteenDays.getTime()) {
+          u.lockedUntil = fifteenDays;
+        }
+        u.lockedReason = "Tài khoản bị khóa 15 ngày do đạt 5 cảnh cáo";
+      }
+      await u.save();
+      userUpdate = { userId: u._id, warningsCount: u.warnings.length, status: u.status, lockedUntil: u.lockedUntil };
+
+      // Notify the author about the content warning
+      try {
+        const { notify } = await import("../utils/notifications.js");
+        await notify({
+          io: req.io,
+          userId: u._id,
+          actorId: req.user._id,
+          type: "content_warning",
+          commentId: c._id,
+          meta: { kind: 'comment', reason: reason || 'Nội dung vi phạm chính sách', warningsCount: u.warnings.length, locked: u.status === 'locked' }
+        });
+      } catch (e) {
+        console.warn('Warn notification failed:', e?.message || e);
+      }
+    }
+  }
+
+  res.json({ success: true, data: c, user: userUpdate });
 }));
 
 router.delete("/moderation/comments/:id", asyncHandler(async (req, res) => {
@@ -473,7 +566,8 @@ router.get("/reports", asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(200)
     .populate("createdBy", "username")
-    .populate("handledBy", "username");
+    .populate("handledBy", "username")
+    .populate("history.by", "username");
   res.json({ success: true, data: items });
 }));
 
